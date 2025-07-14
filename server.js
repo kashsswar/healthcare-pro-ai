@@ -27,6 +27,7 @@ app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/viral', require('./routes/viral'));
 
 // Socket.IO for real-time updates
