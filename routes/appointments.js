@@ -2,6 +2,7 @@ const express = require('express');
 const Appointment = require('../models/Appointment');
 const AIService = require('../utils/aiService');
 const SchedulingService = require('../utils/schedulingService');
+const QueueManager = require('../utils/queueManager');
 const router = express.Router();
 
 // Book appointment with AI pre-assessment
@@ -157,6 +158,47 @@ router.get('/queue/:doctorId', async (req, res) => {
   try {
     const queue = await SchedulingService.updateQueue(req.params.doctorId);
     res.json(queue);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark appointment as completed and reschedule queue
+router.post('/complete-consultation/:appointmentId', async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { doctorId } = req.body;
+
+    const result = await QueueManager.completeAppointment(appointmentId, doctorId);
+    
+    // Notify patients about rescheduling via Socket.IO
+    const io = req.app.get('io');
+    if (io && result.rescheduledAppointments.length > 0) {
+      await QueueManager.notifyRescheduledPatients(result.rescheduledAppointments, io);
+    }
+
+    res.json({
+      success: true,
+      message: `Consultation completed! ${result.rescheduledCount} patients moved to earlier slots.`,
+      completedAppointment: result.completedAppointment,
+      rescheduledCount: result.rescheduledCount,
+      rescheduledAppointments: result.rescheduledAppointments
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get doctor's queue for today
+router.get('/doctor-queue/:doctorId', async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const queueData = await QueueManager.getDoctorQueue(doctorId);
+    
+    res.json({
+      success: true,
+      ...queueData
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

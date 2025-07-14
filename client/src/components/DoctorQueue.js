@@ -1,277 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, CardContent, Typography, Box, Chip, Button, Dialog, DialogTitle, 
-  DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, 
-  InputLabel, Alert, Grid, Avatar, IconButton 
+import {
+  Card, CardContent, Typography, Button, List, ListItem, ListItemText,
+  Chip, Box, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, Alert, CircularProgress, Divider
 } from '@mui/material';
 import { 
-  AccessTime, Person, Phone, LocalHospital, SwapHoriz, 
-  CheckCircle, Schedule, Warning 
+  CheckCircle, Schedule, Person, Phone, AccessTime, 
+  PlayArrow, Stop, Notifications 
 } from '@mui/icons-material';
 import axios from 'axios';
 
 const DoctorQueue = ({ doctorId }) => {
-  const [queueData, setQueueData] = useState({});
-  const [referralDialog, setReferralDialog] = useState({ open: false, patient: null });
-  const [doctors, setDoctors] = useState([]);
-  const [referralData, setReferralData] = useState({ toDoctorId: '', reason: '' });
-  const [message, setMessage] = useState('');
+  const [queue, setQueue] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [completionDialog, setCompletionDialog] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [queueStats, setQueueStats] = useState({});
 
   useEffect(() => {
-    fetchQueue();
-    fetchDoctors();
-    const interval = setInterval(fetchQueue, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
+    if (doctorId) {
+      loadQueue();
+      // Refresh queue every 30 seconds
+      const interval = setInterval(loadQueue, 30000);
+      return () => clearInterval(interval);
+    }
   }, [doctorId]);
 
-  const fetchQueue = async () => {
+  const loadQueue = async () => {
     try {
-      const response = await axios.get(`/api/appointments/doctor/${doctorId}/queue`);
-      setQueueData(response.data);
-    } catch (error) {
-      console.error('Error fetching queue:', error);
-    }
-  };
-
-  const fetchDoctors = async () => {
-    try {
-      const response = await axios.get('/api/doctors');
-      setDoctors(response.data.filter(d => d._id !== doctorId));
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-    }
-  };
-
-  const updateStatus = async (appointmentId, status) => {
-    try {
-      await axios.post(`/api/appointments/${appointmentId}/status`, { status });
-      setMessage(`✅ Patient status updated to ${status}`);
-      fetchQueue();
-    } catch (error) {
-      setMessage('❌ Error updating status');
-    }
-  };
-
-  const handleRefer = async () => {
-    try {
-      const response = await axios.post('/api/appointments/refer', {
-        appointmentId: referralDialog.patient._id,
-        fromDoctorId: doctorId,
-        toDoctorId: referralData.toDoctorId,
-        reason: referralData.reason,
-        patientId: referralDialog.patient.patientId
+      const response = await axios.get(`/api/appointments/doctor-queue/${doctorId}`);
+      setQueue(response.data.queue || []);
+      setQueueStats({
+        total: response.data.totalAppointments,
+        completed: response.data.completed,
+        pending: response.data.pending,
+        currentPatient: response.data.currentPatient
       });
-      
-      setMessage(response.data.notification);
-      setReferralDialog({ open: false, patient: null });
-      setReferralData({ toDoctorId: '', reason: '' });
-      fetchQueue();
     } catch (error) {
-      setMessage('❌ Error referring patient');
+      console.error('Queue loading error:', error);
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'urgent': return 'error';
-      case 'high': return 'warning';
-      case 'referred': return 'secondary';
-      default: return 'primary';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'in-consultation': return 'success';
-      case 'waiting': return 'warning';
-      case 'referred': return 'info';
-      default: return 'default';
-    }
-  };
-
-  return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>👥 Patient Queue</Typography>
-      
-      {message && (
-        <Alert severity={message.includes('✅') ? 'success' : 'error'} sx={{ mb: 2 }}>
-          {message}
-        </Alert>
-      )}
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: 'primary.light' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4">{queueData.totalPatients || 0}</Typography>
-              <Typography color="textSecondary">Total Patients</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: 'success.light' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4">{queueData.estimatedWaitTime || 0} min</Typography>
-              <Typography color="textSecondary">Est. Wait Time</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: 'warning.light' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4">
-                {queueData.currentPatient ? 'In Progress' : 'Ready'}
-              </Typography>
-              <Typography color="textSecondary">Current Status</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Box sx={{ mt: 3 }}>
-        {queueData.queue?.map((patient, index) => (
-          <Card key={patient._id} sx={{ mb: 2, border: patient.status === 'in-consultation' ? '2px solid green' : 'none' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: getPriorityColor(patient.priority) + '.main' }}>
-                    {patient.queuePosition || index + 1}
-                  </Avatar>
-                  
-                  <Box>
-                    <Typography variant="h6">{patient.patientName}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                      <Person fontSize="small" />
-                      <Typography variant="body2">Age: {patient.age}</Typography>
-                      <Phone fontSize="small" />
-                      <Typography variant="body2">{patient.phone}</Typography>
-                    </Box>
-                    
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        Symptoms: {patient.symptoms?.join(', ')}
-                      </Typography>
-                      {patient.referralNote && (
-                        <Typography variant="body2" color="info.main" sx={{ mt: 0.5 }}>
-                          📋 {patient.referralNote}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: 1 }}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Chip 
-                      label={patient.status} 
-                      color={getStatusColor(patient.status)} 
-                      size="small" 
-                    />
-                    <Chip 
-                      label={patient.priority} 
-                      color={getPriorityColor(patient.priority)} 
-                      size="small" 
-                    />
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccessTime fontSize="small" />
-                    <Typography variant="body2">{patient.estimatedTime}</Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                    {patient.status === 'waiting' && (
-                      <Button 
-                        size="small" 
-                        variant="contained" 
-                        color="success"
-                        startIcon={<CheckCircle />}
-                        onClick={() => updateStatus(patient._id, 'in-consultation')}
-                      >
-                        Start
-                      </Button>
-                    )}
-                    
-                    {patient.status === 'in-consultation' && (
-                      <>
-                        <Button 
-                          size="small" 
-                          variant="contained" 
-                          color="primary"
-                          onClick={() => updateStatus(patient._id, 'completed')}
-                        >
-                          Complete
-                        </Button>
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          color="warning"
-                          startIcon={<SwapHoriz />}
-                          onClick={() => setReferralDialog({ open: true, patient })}
-                        >
-                          Refer
-                        </Button>
-                      </>
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
-
-      {/* Referral Dialog */}
-      <Dialog open={referralDialog.open} onClose={() => setReferralDialog({ open: false, patient: null })}>
-        <DialogTitle>
-          🔄 Refer Patient: {referralDialog.patient?.patientName}
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            ✅ No additional charge for patient or referring doctor
-          </Alert>
-          
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Refer to Doctor</InputLabel>
-            <Select 
-              value={referralData.toDoctorId} 
-              onChange={(e) => setReferralData({...referralData, toDoctorId: e.target.value})}
-            >
-              {doctors.map(doctor => (
-                <MenuItem key={doctor._id} value={doctor._id}>
-                  Dr. {doctor.userId?.name} - {doctor.specialization}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            fullWidth
-            label="Reason for Referral"
-            value={referralData.reason}
-            onChange={(e) => setReferralData({...referralData, reason: e.target.value})}
-            multiline
-            rows={3}
-            placeholder="e.g., Requires specialist consultation, Outside my expertise"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReferralDialog({ open: false, patient: null })}>
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleRefer}
-            disabled={!referralData.toDoctorId || !referralData.reason}
-          >
-            Refer Patient (Free)
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-};
-
-export default DoctorQueue;
+  const startConsultation = async (appointmentId) => {
+    setLoading(true);
+    try {
+      await axios.post(`/api/appointments/start/${appointmentId}`);
+      loadQueue(); // Refresh queue
+      alert('Consultation started!');\n    } catch (error) {\n      alert('Failed to start consultation');\n    }\n    setLoading(false);\n  };\n\n  const completeConsultation = async () => {\n    setLoading(true);\n    try {\n      const response = await axios.post(\n        `/api/appointments/complete-consultation/${selectedAppointment._id}`,\n        { doctorId }\n      );\n      \n      alert(`${response.data.message}\\n\\nRescheduled ${response.data.rescheduledCount} patients to earlier slots!`);\n      setCompletionDialog(false);\n      setSelectedAppointment(null);\n      loadQueue(); // Refresh queue\n    } catch (error) {\n      alert('Failed to complete consultation');\n    }\n    setLoading(false);\n  };\n\n  const openCompletionDialog = (appointment) => {\n    setSelectedAppointment(appointment);\n    setCompletionDialog(true);\n  };\n\n  const getStatusColor = (status) => {\n    switch (status) {\n      case 'completed': return 'success';\n      case 'in-progress': return 'warning';\n      case 'scheduled': return 'primary';\n      default: return 'default';\n    }\n  };\n\n  const getStatusIcon = (status) => {\n    switch (status) {\n      case 'completed': return <CheckCircle />;\n      case 'in-progress': return <PlayArrow />;\n      case 'scheduled': return <Schedule />;\n      default: return <Schedule />;\n    }\n  };\n\n  return (\n    <Box sx={{ p: 3 }}>\n      <Typography variant=\"h5\" gutterBottom>\n        📋 Today's Queue\n      </Typography>\n\n      {/* Queue Statistics */}\n      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>\n        <Card variant=\"outlined\">\n          <CardContent sx={{ textAlign: 'center', py: 2 }}>\n            <Typography variant=\"h4\" color=\"primary\">{queueStats.total || 0}</Typography>\n            <Typography variant=\"body2\">Total Appointments</Typography>\n          </CardContent>\n        </Card>\n        <Card variant=\"outlined\">\n          <CardContent sx={{ textAlign: 'center', py: 2 }}>\n            <Typography variant=\"h4\" color=\"success.main\">{queueStats.completed || 0}</Typography>\n            <Typography variant=\"body2\">Completed</Typography>\n          </CardContent>\n        </Card>\n        <Card variant=\"outlined\">\n          <CardContent sx={{ textAlign: 'center', py: 2 }}>\n            <Typography variant=\"h4\" color=\"warning.main\">{queueStats.pending || 0}</Typography>\n            <Typography variant=\"body2\">Pending</Typography>\n          </CardContent>\n        </Card>\n      </Box>\n\n      {/* Current Patient Alert */}\n      {queueStats.currentPatient && (\n        <Alert \n          severity=\"info\" \n          sx={{ mb: 3 }}\n          icon={<Person />}\n        >\n          <strong>Next Patient:</strong> {queueStats.currentPatient.patient?.name} \n          at {new Date(queueStats.currentPatient.appointmentTime).toLocaleTimeString()}\n        </Alert>\n      )}\n\n      {/* Queue List */}\n      <Card>\n        <CardContent>\n          <Typography variant=\"h6\" gutterBottom>\n            Patient Queue ({queue.length})\n          </Typography>\n          \n          {queue.length === 0 ? (\n            <Typography color=\"textSecondary\" sx={{ textAlign: 'center', py: 4 }}>\n              No appointments scheduled for today\n            </Typography>\n          ) : (\n            <List>\n              {queue.map((appointment, index) => (\n                <React.Fragment key={appointment._id}>\n                  <ListItem \n                    sx={{ \n                      bgcolor: appointment.isNext ? 'primary.light' : 'transparent',\n                      borderRadius: 1,\n                      mb: 1\n                    }}\n                  >\n                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>\n                      {/* Position Number */}\n                      <Box sx={{ \n                        minWidth: 40, \n                        height: 40, \n                        borderRadius: '50%', \n                        bgcolor: appointment.isNext ? 'primary.main' : 'grey.300',\n                        color: appointment.isNext ? 'white' : 'text.primary',\n                        display: 'flex',\n                        alignItems: 'center',\n                        justifyContent: 'center',\n                        fontWeight: 'bold',\n                        mr: 2\n                      }}>\n                        {appointment.position}\n                      </Box>\n\n                      {/* Patient Info */}\n                      <ListItemText\n                        primary={\n                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>\n                            <Typography variant=\"subtitle1\" fontWeight=\"bold\">\n                              {appointment.patient?.name}\n                            </Typography>\n                            <Chip \n                              icon={getStatusIcon(appointment.status)}\n                              label={appointment.status.toUpperCase()}\n                              color={getStatusColor(appointment.status)}\n                              size=\"small\"\n                            />\n                            {appointment.isNext && (\n                              <Chip label=\"NEXT\" color=\"primary\" size=\"small\" />\n                            )}\n                          </Box>\n                        }\n                        secondary={\n                          <Box>\n                            <Typography variant=\"body2\" color=\"textSecondary\">\n                              <AccessTime sx={{ fontSize: 16, mr: 0.5 }} />\n                              {new Date(appointment.appointmentTime).toLocaleTimeString()}\n                              {appointment.estimatedWaitTime > 0 && (\n                                <span> • Wait: ~{appointment.estimatedWaitTime} min</span>\n                              )}\n                            </Typography>\n                            <Typography variant=\"body2\" color=\"textSecondary\">\n                              <Phone sx={{ fontSize: 16, mr: 0.5 }} />\n                              {appointment.patient?.phone}\n                            </Typography>\n                            {appointment.symptoms && (\n                              <Typography variant=\"body2\" sx={{ mt: 0.5 }}>\n                                <strong>Symptoms:</strong> {appointment.symptoms}\n                              </Typography>\n                            )}\n                            {appointment.rescheduledFrom && (\n                              <Alert severity=\"info\" sx={{ mt: 1, py: 0 }}>\n                                <Typography variant=\"caption\">\n                                  Rescheduled from {new Date(appointment.rescheduledFrom).toLocaleTimeString()}\n                                </Typography>\n                              </Alert>\n                            )}\n                          </Box>\n                        }\n                      />\n\n                      {/* Action Buttons */}\n                      <Box sx={{ ml: 2 }}>\n                        {appointment.status === 'scheduled' && (\n                          <Button\n                            variant=\"contained\"\n                            startIcon={<PlayArrow />}\n                            onClick={() => startConsultation(appointment._id)}\n                            disabled={loading}\n                            sx={{ mr: 1 }}\n                          >\n                            Start\n                          </Button>\n                        )}\n                        {appointment.status === 'in-progress' && (\n                          <Button\n                            variant=\"contained\"\n                            color=\"success\"\n                            startIcon={<CheckCircle />}\n                            onClick={() => openCompletionDialog(appointment)}\n                            disabled={loading}\n                          >\n                            Complete\n                          </Button>\n                        )}\n                        {appointment.status === 'completed' && (\n                          <Chip \n                            icon={<CheckCircle />}\n                            label=\"Done\"\n                            color=\"success\"\n                            variant=\"outlined\"\n                          />\n                        )}\n                      </Box>\n                    </Box>\n                  </ListItem>\n                  {index < queue.length - 1 && <Divider />}\n                </React.Fragment>\n              ))}\n            </List>\n          )}\n        </CardContent>\n      </Card>\n\n      {/* Completion Dialog */}\n      <Dialog open={completionDialog} onClose={() => setCompletionDialog(false)} maxWidth=\"sm\" fullWidth>\n        <DialogTitle>\n          ✅ Complete Consultation\n        </DialogTitle>\n        <DialogContent>\n          <Typography gutterBottom>\n            Mark consultation with <strong>{selectedAppointment?.patient?.name}</strong> as completed?\n          </Typography>\n          <Alert severity=\"info\" sx={{ mt: 2 }}>\n            <Typography variant=\"body2\">\n              🚀 <strong>Smart Queue Management:</strong><br/>\n              Other patients will be automatically moved to earlier time slots!\n            </Typography>\n          </Alert>\n        </DialogContent>\n        <DialogActions>\n          <Button onClick={() => setCompletionDialog(false)}>Cancel</Button>\n          <Button \n            variant=\"contained\" \n            color=\"success\"\n            onClick={completeConsultation}\n            disabled={loading}\n            startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}\n          >\n            Complete Consultation\n          </Button>\n        </DialogActions>\n      </Dialog>\n    </Box>\n  );\n};\n\nexport default DoctorQueue;
