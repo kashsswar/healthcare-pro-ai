@@ -1,9 +1,0 @@
-{
-  "admin": {
-    "username": "superadmin2024",
-    "password": "MyHealthApp@2024!",
-    "secretKey": "HEALTH_ADMIN_SECRET_2024",
-    "email": "admin@healthcarepro.com",
-    "permissions": ["all"]
-  }
-}

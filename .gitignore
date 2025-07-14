@@ -2,7 +2,7 @@
 node_modules/
 client/node_modules/
 
-# Environment variables
+# Environment variables (SENSITIVE)
 .env
 .env.local
 .env.production
@@ -27,5 +27,21 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Batch files
+# Windows batch files
 *.bat
+
+# Documentation files (except README)
+*.md
+!README.md
+
+# Test and mock files
+test-*.js
+server-no-db.js
+server-without-db.js
+mock-data/
+test-data/
+*.sql
+
+# Development files
+.eslintrc*
+.prettierrc*
