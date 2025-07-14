@@ -1,5 +1,6 @@
 const express = require('express');
 const AIMarketingService = require('../utils/aiMarketingService');
+const AutoPostingService = require('../utils/autoPostingService');
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
 const router = express.Router();
@@ -133,6 +134,139 @@ router.get('/analytics', async (req, res) => {
         marketingPotential: totalDoctors * 7, // 7 campaigns per doctor per week
         estimatedReach: totalPatients * 3 // Estimated social reach multiplier
       }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Auto-post generated content to all platforms
+router.post('/auto-post', async (req, res) => {
+  try {
+    const { specialization, targetAudience } = req.body;
+    
+    // Generate content using AI
+    const content = await AIMarketingService.generateHealthContent(specialization, targetAudience);
+    
+    // Get all patients for targeting
+    const patients = await User.find({ role: 'patient' }).limit(100); // Limit for testing
+    
+    // Post to all platforms
+    const results = await AutoPostingService.postToAllPlatforms(content, patients);
+    
+    res.json({
+      success: true,
+      message: 'Content posted to all platforms',
+      content,
+      results: {
+        emailsSent: results.email.filter(r => r.status === 'sent').length,
+        whatsappSent: results.whatsapp.filter(r => r.success).length,
+        facebookPosted: results.facebook.success,
+        twitterPosted: results.twitter.success,
+        smsSent: results.sms.filter(r => r.status === 'sent').length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Send email campaign
+router.post('/send-email', async (req, res) => {
+  try {
+    const { subject, content, targetAudience } = req.body;
+    const patients = await User.find({ role: 'patient' });
+    
+    const results = await AutoPostingService.sendBulkEmails(patients, subject, content);
+    
+    res.json({
+      success: true,
+      message: `Email sent to ${results.filter(r => r.status === 'sent').length} patients`,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Send WhatsApp campaign
+router.post('/send-whatsapp', async (req, res) => {
+  try {
+    const { message } = req.body;
+    const patients = await User.find({ role: 'patient', phone: { $exists: true } });
+    
+    const results = await AutoPostingService.sendBulkWhatsApp(patients, message);
+    
+    res.json({
+      success: true,
+      message: `WhatsApp sent to ${results.filter(r => r.success).length} patients`,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Post to social media
+router.post('/post-social', async (req, res) => {
+  try {
+    const { content, platform } = req.body;
+    let result;
+    
+    if (platform === 'facebook') {
+      result = await AutoPostingService.postToFacebook(content);
+    } else if (platform === 'twitter') {
+      result = await AutoPostingService.postToTwitter(content);
+    } else {
+      // Post to all platforms
+      const facebook = await AutoPostingService.postToFacebook(content);
+      const twitter = await AutoPostingService.postToTwitter(content);
+      result = { facebook, twitter };
+    }
+    
+    res.json({
+      success: true,
+      message: 'Posted to social media',
+      result
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Full automation - Generate + Post
+router.post('/full-automation', async (req, res) => {
+  try {
+    const doctors = await Doctor.find().populate('userId');
+    const patients = await User.find({ role: 'patient' });
+    const results = [];
+    
+    // Generate and post content for each specialization
+    const specializations = [...new Set(doctors.map(d => d.specialization))];
+    
+    for (const specialization of specializations) {
+      // Generate AI content
+      const content = await AIMarketingService.generateHealthContent(specialization);
+      
+      // Post to all platforms
+      const postResults = await AutoPostingService.postToAllPlatforms(content, patients);
+      
+      results.push({
+        specialization,
+        content: content.substring(0, 100) + '...',
+        emailsSent: postResults.email.filter(r => r.status === 'sent').length,
+        whatsappSent: postResults.whatsapp.filter(r => r.success).length,
+        socialPosted: postResults.facebook.success && postResults.twitter.success
+      });
+      
+      // Delay between campaigns
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    res.json({
+      success: true,
+      message: `Full automation completed for ${specializations.length} specializations`,
+      results
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -84,6 +84,24 @@ const AIMarketingDashboard = () => {
     setLoading(false);
   };
 
+  const runFullAutomation = async () => {
+    if (!window.confirm('This will automatically post to ALL platforms (Email, WhatsApp, Social Media). Continue?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await axios.post('/api/marketing/full-automation');
+      alert(`🚀 FULL AUTOMATION COMPLETE!\n\nResults:\n${response.data.results.map(r => 
+        `${r.specialization}: ${r.emailsSent} emails, ${r.whatsappSent} WhatsApp, Social: ${r.socialPosted ? 'Posted' : 'Failed'}`
+      ).join('\n')}`);
+    } catch (error) {
+      console.error('Full automation error:', error);
+      alert('Automation failed. Check API keys in environment variables.');
+    }
+    setLoading(false);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
@@ -206,16 +224,33 @@ const AIMarketingDashboard = () => {
                 AI will automatically generate and schedule marketing content for all your doctors
               </Alert>
               
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<AutoAwesome />}
-                onClick={runAutoCampaign}
-                disabled={loading}
-                sx={{ mb: 3 }}
-              >
-                🚀 Run Auto Marketing Campaign
-              </Button>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} md={6}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    startIcon={<AutoAwesome />}
+                    onClick={runAutoCampaign}
+                    disabled={loading}
+                  >
+                    🚀 Generate Campaigns
+                  </Button>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    startIcon={<Campaign />}
+                    onClick={runFullAutomation}
+                    disabled={loading}
+                    color="success"
+                  >
+                    🎯 FULL AUTOMATION
+                  </Button>
+                </Grid>
+              </Grid>
 
               {campaigns.length > 0 && (
                 <Box>
