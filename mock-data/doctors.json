@@ -1,0 +1,30 @@
+{
+  "doctors": [
+    {
+      "id": "doc_001",
+      "name": "Dr. Rajesh Kumar Sharma",
+      "email": "dr.rajesh@healthcarepro.com",
+      "password": "doctor123",
+      "specialization": "General Medicine",
+      "qualification": ["MBBS", "MD Internal Medicine"],
+      "experience": 12,
+      "rating": 4.3,
+      "consultationFee": 800,
+      "location": "Mumbai, Maharashtra",
+      "verified": true
+    },
+    {
+      "id": "doc_002",
+      "name": "Dr. Priya Patel",
+      "email": "dr.priya@healthcarepro.com",
+      "password": "doctor123",
+      "specialization": "Dentistry",
+      "qualification": ["BDS", "MDS Oral Surgery"],
+      "experience": 8,
+      "rating": 4.1,
+      "consultationFee": 1200,
+      "location": "Delhi, NCR",
+      "verified": true
+    }
+  ]
+}
