@@ -15,10 +15,45 @@ function HealthRecommendations({ user }) {
   }, []);
 
   const loadRecommendations = async () => {
+    // Reset recommendations to force UI update
+    setRecommendations([]);
     try {
       setLoading(true);
+      
+      // Set a timeout to provide fallback recommendations if API takes too long
+      const timeoutId = setTimeout(() => {
+        if (loading) {
+          console.log('API taking too long, using fallback recommendations');
+          setRecommendations([
+            'Brush your teeth twice daily with fluoride toothpaste',
+            'Floss daily to remove plaque between teeth',
+            'Visit your dentist every 6 months for checkups',
+            'Drink plenty of water throughout the day',
+            'Exercise for at least 30 minutes, 5 days a week',
+            'Get 7-8 hours of quality sleep each night',
+            'Eat a balanced diet rich in fruits and vegetables'
+          ]);
+          setLoading(false);
+        }
+      }, 3000); // 3 seconds timeout
+      
       const response = await aiAPI.getHealthRecommendations(user.id);
-      setRecommendations(response.data.recommendations);
+      clearTimeout(timeoutId);
+      
+      if (response.data && response.data.recommendations && response.data.recommendations.length > 0) {
+        setRecommendations(response.data.recommendations);
+      } else {
+        // Fallback recommendations if API returns empty array
+        setRecommendations([
+          'Brush your teeth twice daily with fluoride toothpaste',
+          'Floss daily to remove plaque between teeth',
+          'Visit your dentist every 6 months for checkups',
+          'Drink plenty of water throughout the day',
+          'Exercise for at least 30 minutes, 5 days a week',
+          'Get 7-8 hours of quality sleep each night',
+          'Eat a balanced diet rich in fruits and vegetables'
+        ]);
+      }
     } catch (error) {
       console.error('Recommendations load error:', error);
       // Fallback recommendations

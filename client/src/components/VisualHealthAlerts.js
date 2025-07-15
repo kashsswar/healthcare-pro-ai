@@ -13,7 +13,7 @@ function VisualHealthAlerts() {
       title: 'AI दांत स्वास्थ्य सुझाव',
       subtitle: 'AI Dental Health Insights',
       description: 'AI के अनुसार दांतों की नियमित जांच जरूरी',
-      action: 'BDS विशेषज्ञ से मिलें',
+      action: 'विशेषज्ञ से मिलें',
       urgency: 'medium',
       color: 'primary'
     },
@@ -22,7 +22,7 @@ function VisualHealthAlerts() {
       title: 'AI स्वास्थ्य मॉनिटरिंग',
       subtitle: 'AI Health Monitoring',
       description: 'AI के अनुसार लक्षणों का समय पर इलाज महत्वपूर्ण',
-      action: 'MBBS डॉक्टर से सलाह',
+      action: 'डॉक्टर से सलाह',
       urgency: 'medium',
       color: 'secondary'
     },

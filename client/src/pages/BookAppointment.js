@@ -76,7 +76,7 @@ function BookAppointment({ user }) {
         <Typography variant="h4" gutterBottom>Book Appointment</Typography>
         
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Dr. {doctor.userId?.name}</Typography>
+          <Typography variant="h6">Doctor {doctor.userId?.name}</Typography>
           <Chip label={doctor.specialization} color="primary" sx={{ mt: 1 }} />
           <Typography variant="body2" sx={{ mt: 1 }}>
             Fee: ₹{doctor.consultationFee} | Avg. Time: {doctor.avgConsultationTime} min

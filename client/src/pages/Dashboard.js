@@ -192,13 +192,35 @@ function Dashboard({ user, socket }) {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                AI Health Recommendations
-              </Typography>
-              {healthRecommendations.length === 0 ? (
-                <Typography color="textSecondary">
-                  Loading personalized recommendations...
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  AI Health Recommendations
                 </Typography>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={loadDashboardData}
+                >
+                  Refresh
+                </Button>
+              </Box>
+              {healthRecommendations.length === 0 ? (
+                <Box>
+                  <Typography color="textSecondary" sx={{ mb: 2 }}>
+                    No recommendations available. Here are some general health tips:
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <ListItemText primary="Drink plenty of water throughout the day" />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary="Exercise for at least 30 minutes, 5 days a week" />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary="Get 7-8 hours of quality sleep each night" />
+                    </ListItem>
+                  </List>
+                </Box>
               ) : (
                 <List>
                   {healthRecommendations.slice(0, 5).map((recommendation, index) => (
