@@ -22,7 +22,7 @@
     "start-production": "set NODE_ENV=production && node server.js",
     "deploy": "npm run build && npm run start-production",
     "test-specializations": "node test-specializations.js",
-    "heroku-postbuild": "cd client && npm install && npm run build"
+    "render-postbuild": "cd client && npm install && npm run build"
   },
   "dependencies": {
     "axios": "^1.10.0",
