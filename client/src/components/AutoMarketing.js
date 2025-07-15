@@ -1,125 +1,151 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Card, CardContent, Typography, Box, Button, Alert, 
-  LinearProgress, Chip 
+  Card, CardContent, Typography, Button, Box, Chip, 
+  Dialog, DialogContent, DialogTitle, IconButton, Snackbar, Alert 
 } from '@mui/material';
-import { Campaign, Share, TrendingUp } from '@mui/icons-material';
+import { Share, ContentCopy, Close, AutoAwesome } from '@mui/icons-material';
+import axios from 'axios';
 
 function AutoMarketing() {
-  const [campaigns, setCampaigns] = useState([]);
-  const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [marketingContent, setMarketingContent] = useState('');
+  const [testimonial, setTestimonial] = useState(null);
+  const [healthTip, setHealthTip] = useState('');
+  const [showDialog, setShowDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    loadMarketingData();
-    const interval = setInterval(loadMarketingData, 30000);
-    return () => clearInterval(interval);
+    generateDailyContent();
   }, []);
 
-  const loadMarketingData = async () => {
+  const generateDailyContent = async () => {
     try {
-      const response = await fetch('/api/marketing/auto-campaigns');
-      const data = await response.json();
-      setCampaigns(data.campaigns);
-      setStats(data.stats);
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      
+      // Generate social media content
+      const socialRes = await axios.post(`${apiUrl}/api/auto-marketing/generate-content`, {
+        type: 'social'
+      });
+      setMarketingContent(socialRes.data.content);
+      
+      // Get testimonial
+      const testimonialRes = await axios.post(`${apiUrl}/api/auto-marketing/generate-testimonial`);
+      setTestimonial(testimonialRes.data);
+      
+      // Get health tip
+      const tipRes = await axios.get(`${apiUrl}/api/auto-marketing/daily-health-tip`);
+      setHealthTip(tipRes.data.tip);
     } catch (error) {
-      console.error('Marketing data error:', error);
+      console.error('Auto-marketing content generation failed:', error);
+      // Fallback content
+      setMarketingContent("🏥 Experience healthcare like never before! Book appointments with verified doctors instantly. Your health, simplified! 💊✨");
+      setHealthTip("💧 Remember to stay hydrated! Drink plenty of water throughout the day.");
     }
   };
 
-  const launchCampaign = async (campaignId) => {
-    setLoading(true);
-    try {
-      await fetch(`/api/marketing/launch/${campaignId}`, { method: 'POST' });
-      alert('Campaign launched successfully!');
-      loadMarketingData();
-    } catch (error) {
-      alert('Campaign launch failed');
-    } finally {
-      setLoading(false);
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+  };
+
+  const shareContent = async (text) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'HealthConnect AI',
+          text: text,
+          url: window.location.origin
+        });
+      } catch (error) {
+        copyToClipboard(text);
+      }
+    } else {
+      copyToClipboard(text);
     }
   };
 
   return (
-    <Card sx={{ mb: 4 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Campaign color="primary" sx={{ mr: 1 }} />
-          <Typography variant="h6">🚀 Auto-Marketing Engine</Typography>
-        </Box>
-
-        <Alert severity="success" sx={{ mb: 2 }}>
-          📈 Marketing campaigns running automatically. Current reach: {stats.totalReach || 0} people
-        </Alert>
-
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>📊 Live Marketing Stats:</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip label={`WhatsApp: ${stats.whatsappReach || 0}`} color="success" />
-            <Chip label={`Social Media: ${stats.socialReach || 0}`} color="info" />
-            <Chip label={`Referrals: ${stats.referralReach || 0}`} color="warning" />
-            <Chip label={`New Users: ${stats.newUsers || 0}`} color="primary" />
+    <>
+      <Card sx={{ mb: 2, border: '2px solid', borderColor: 'primary.main' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <AutoAwesome color="primary" sx={{ mr: 1 }} />
+            <Typography variant="h6">AI Auto-Marketing Hub</Typography>
+            <Chip label="LIVE" color="success" size="small" sx={{ ml: 2 }} />
           </Box>
-        </Box>
-
-        <Typography variant="subtitle1" gutterBottom>🎯 Active Campaigns:</Typography>
-        {campaigns.map((campaign) => (
-          <Box key={campaign.id} sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {campaign.name}
-              </Typography>
-              <Chip 
-                label={campaign.status} 
-                color={campaign.status === 'active' ? 'success' : 'default'}
-                size="small"
-              />
-            </Box>
-            
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-              {campaign.description}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2">
-                Reach: {campaign.currentReach}/{campaign.targetReach} | 
-                ROI: {campaign.roi}%
-              </Typography>
-              
-              {campaign.status === 'ready' && (
-                <Button 
-                  size="small" 
-                  variant="contained"
-                  onClick={() => launchCampaign(campaign.id)}
-                  disabled={loading}
-                  startIcon={<TrendingUp />}
-                >
-                  Launch
-                </Button>
-              )}
-            </Box>
-            
-            {campaign.status === 'active' && (
-              <LinearProgress 
-                variant="determinate" 
-                value={(campaign.currentReach / campaign.targetReach) * 100}
-                sx={{ mt: 1 }}
-              />
-            )}
-          </Box>
-        ))}
-
-        <Box sx={{ mt: 3, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-          <Typography variant="body2">
-            💡 <strong>Auto-Marketing Features:</strong>
-            <br />• WhatsApp health tips with app links sent to 1000+ people daily
-            <br />• Social media posts about success stories auto-generated
-            <br />• Referral rewards distributed automatically
-            <br />• Doctor testimonials shared in medical groups
+          
+          <Typography variant="body1" sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+            {marketingContent}
           </Typography>
-        </Box>
-      </CardContent>
-    </Card>
+          
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <Button 
+              variant="contained" 
+              startIcon={<Share />}
+              onClick={() => shareContent(marketingContent)}
+              size="small"
+            >
+              Share Post
+            </Button>
+            <Button 
+              variant="outlined" 
+              startIcon={<ContentCopy />}
+              onClick={() => copyToClipboard(marketingContent)}
+              size="small"
+            >
+              Copy
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={generateDailyContent}
+              size="small"
+            >
+              🤖 Generate New
+            </Button>
+          </Box>
+
+          {/* Health Tip */}
+          <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1, mb: 2 }}>
+            <Typography variant="subtitle2" color="success.dark">Today's Health Tip:</Typography>
+            <Typography variant="body2">{healthTip}</Typography>
+            <Button 
+              size="small" 
+              onClick={() => shareContent(healthTip)}
+              sx={{ mt: 1 }}
+            >
+              Share Tip
+            </Button>
+          </Box>
+
+          {/* Testimonial */}
+          {testimonial && (
+            <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+              <Typography variant="subtitle2" color="info.dark">Patient Success Story:</Typography>
+              <Typography variant="body2" sx={{ fontStyle: 'italic', mb: 1 }}>
+                "{testimonial.text}"
+              </Typography>
+              <Typography variant="caption">
+                - {testimonial.name} ({testimonial.specialization})
+              </Typography>
+              <Button 
+                size="small" 
+                onClick={() => shareContent(`"${testimonial.text}" - ${testimonial.name}`)}
+                sx={{ mt: 1, display: 'block' }}
+              >
+                Share Story
+              </Button>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      <Snackbar 
+        open={copied} 
+        autoHideDuration={2000} 
+        onClose={() => setCopied(false)}
+      >
+        <Alert severity="success">Content copied to clipboard!</Alert>
+      </Snackbar>
+    </>
   );
 }
 

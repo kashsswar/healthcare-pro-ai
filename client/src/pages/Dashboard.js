@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { appointmentAPI, aiAPI } from '../services/api';
 import { useLanguage } from '../App';
 import PatientDoctorSearch from '../components/PatientDoctorSearch';
+import AutoMarketing from '../components/AutoMarketing';
+import ViralGrowthEngine from '../components/ViralGrowthEngine';
 
 function Dashboard({ user, socket }) {
   const [appointments, setAppointments] = useState([]);
@@ -117,6 +119,16 @@ function Dashboard({ user, socket }) {
         <PatientDoctorSearch onBookAppointment={handleBookAppointment} />
       ) : (
       <Grid container spacing={3}>
+        {/* AI Auto-Marketing */}
+        <Grid item xs={12}>
+          <AutoMarketing />
+        </Grid>
+        
+        {/* Viral Growth Engine */}
+        <Grid item xs={12}>
+          <ViralGrowthEngine user={user} />
+        </Grid>
+        
         {/* Quick Actions */}
         <Grid item xs={12} md={4}>
           <Card>

@@ -30,6 +30,7 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/viral', require('./routes/viral'));
+app.use('/api/auto-marketing', require('./routes/auto-marketing'));
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
