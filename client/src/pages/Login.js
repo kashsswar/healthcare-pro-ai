@@ -24,25 +24,14 @@ function Login({ onLogin }) {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || '';
-      console.log('API URL:', apiUrl);
+      const response = await authAPI.login(formData);
+      const data = response.data;
       
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        onLogin(data.user, data.token);
-        navigate('/dashboard');
-      } else {
-        setError(data.message || 'Invalid email or password');
-      }
+      onLogin(data.user, data.token);
+      navigate('/dashboard');
     } catch (error) {
-      setError('Network error. Please check your internet connection.');
+      console.error('Login error:', error);
+      setError(error.response?.data?.message || 'Network error. Please check your internet connection.');
     } finally {
       setLoading(false);
     }

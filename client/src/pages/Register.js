@@ -24,8 +24,7 @@ function Register({ onLogin }) {
 
   const fetchSpecializations = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || '';
-      const response = await axios.get(`${apiUrl}/api/doctors/specializations`);
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/doctors/specializations`);
       setSpecializations(response.data);
     } catch (error) {
       console.error('Error fetching specializations:', error);
@@ -56,8 +55,6 @@ function Register({ onLogin }) {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || '';
-      
       // Use custom specialization if provided
       const finalFormData = {
         ...formData,
@@ -66,22 +63,14 @@ function Register({ onLogin }) {
           : formData.specialization
       };
       
-      const response = await fetch(`${apiUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalFormData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        onLogin(data.user, data.token);
-        navigate('/dashboard');
-      } else {
-        setError(data.message || 'Registration failed. Please check your details.');
-      }
+      const response = await authAPI.register(finalFormData);
+      const data = response.data;
+      
+      onLogin(data.user, data.token);
+      navigate('/dashboard');
     } catch (error) {
-      setError('Network error. Please check your internet connection.');
+      console.error('Registration error:', error);
+      setError(error.response?.data?.message || 'Network error. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
