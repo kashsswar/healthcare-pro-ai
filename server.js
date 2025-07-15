@@ -31,6 +31,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/viral', require('./routes/viral'));
 app.use('/api/auto-marketing', require('./routes/auto-marketing'));
+app.use('/api/outreach-marketing', require('./routes/outreach-marketing'));
+app.use('/api/admin-marketing', require('./routes/admin-marketing'));
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
@@ -64,5 +66,7 @@ server.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV}`);
   if (process.env.NODE_ENV === 'production') {
     console.log('Serving React frontend from /client/build');
+    // Start auto-marketing cron job in production
+    require('./auto-marketing-cron');
   }
 });

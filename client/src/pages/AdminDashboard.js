@@ -9,6 +9,7 @@ import AutoMarketing from '../components/AutoMarketing';
 import AdminDoctorBoost from '../components/AdminDoctorBoost';
 import MarketingAnalytics from '../components/MarketingAnalytics';
 import ProfessionalAdminPanel from '../components/ProfessionalAdminPanel';
+import AdminMarketingHub from '../components/AdminMarketingHub';
 
 function AdminDashboard() {
   const [stats, setStats] = useState({});
@@ -109,6 +110,7 @@ function AdminDashboard() {
         <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
           <Tab label="📊 Overview" />
           <Tab label="📈 Marketing Analytics" />
+          <Tab label="🚀 Auto Marketing" />
           <Tab label="⚙️ Admin Controls" />
         </Tabs>
       </Card>
@@ -128,7 +130,9 @@ function AdminDashboard() {
       
       {tabValue === 1 && <MarketingAnalytics />}
       
-      {tabValue === 2 && <ProfessionalAdminPanel />}
+      {tabValue === 2 && <AdminMarketingHub />}
+      
+      {tabValue === 3 && <ProfessionalAdminPanel />}
 
       {tabValue === 0 && (
         <>

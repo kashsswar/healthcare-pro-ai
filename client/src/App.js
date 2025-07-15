@@ -14,6 +14,8 @@ import AppointmentQueue from './pages/AppointmentQueue';
 import HealthRecommendations from './pages/HealthRecommendations';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
+import MarketingWidget from './pages/MarketingWidget';
+import EmbedWidget from './pages/EmbedWidget';
 import VoiceAssistant from './components/VoiceAssistant';
 import VisualHealthAlerts from './components/VisualHealthAlerts';
 import AccessibilityPanel from './components/AccessibilityPanel';
@@ -112,6 +114,14 @@ function App() {
             <Route 
               path="/admin" 
               element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/secret-admin-portal-2024" />} 
+            />
+            <Route 
+              path="/marketing-widget" 
+              element={<MarketingWidget />} 
+            />
+            <Route 
+              path="/embed" 
+              element={<EmbedWidget />} 
             />
             <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           </Routes>

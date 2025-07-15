@@ -69,8 +69,7 @@ function AutoMarketing() {
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <AutoAwesome color="primary" sx={{ mr: 1 }} />
-            <Typography variant="h6">AI Auto-Marketing Hub</Typography>
-            <Chip label="LIVE" color="success" size="small" sx={{ ml: 2 }} />
+            <Typography variant="h6">Health Awareness Hub</Typography>
           </Box>
           
           <Typography variant="body1" sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
@@ -84,7 +83,7 @@ function AutoMarketing() {
               onClick={() => shareContent(marketingContent)}
               size="small"
             >
-              Share Post
+              Share to Help Others
             </Button>
             <Button 
               variant="outlined" 

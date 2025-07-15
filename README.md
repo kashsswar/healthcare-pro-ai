@@ -4,7 +4,7 @@ A modern healthcare platform connecting patients with doctors.
 
 ## Features
 - Doctor registration and patient booking
-- Multiple medical specializations
+- 12+ medical specializations
 - Real-time availability tracking
 - Admin dashboard
 

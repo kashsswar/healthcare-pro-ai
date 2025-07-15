@@ -171,7 +171,7 @@ const ProfessionalAdminPanel = () => {
           • Enhanced doctors get 3x more visibility
           • Viral campaigns increase referrals by 400%
           • AI-generated content drives organic growth
-          • Platform earns ₹500 per doctor referral, ₹100 per patient
+          • Platform commission: 12% per consultation
         </Typography>
       </Card>
     </Box>
