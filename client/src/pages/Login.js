@@ -24,7 +24,7 @@ function Login({ onLogin }) {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       console.log('API URL:', apiUrl);
       
       const response = await fetch(`${apiUrl}/api/auth/login`, {

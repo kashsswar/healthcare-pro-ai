@@ -24,7 +24,7 @@ function Register({ onLogin }) {
 
   const fetchSpecializations = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await axios.get(`${apiUrl}/api/doctors/specializations`);
       setSpecializations(response.data);
     } catch (error) {
@@ -56,7 +56,7 @@ function Register({ onLogin }) {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       
       // Use custom specialization if provided
       const finalFormData = {
