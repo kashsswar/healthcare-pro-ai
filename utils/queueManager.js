@@ -25,11 +25,11 @@ class QueueManager {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const pendingAppointments = await Appointment.find({
-        doctorId: doctorId,
-        appointmentDate: { $gte: today, $lt: tomorrow },
+        doctor: doctorId,
+        scheduledTime: { $gte: today, $lt: tomorrow },
         status: 'scheduled',
-        appointmentTime: { $gt: completedAppointment.appointmentTime }
-      }).sort({ appointmentTime: 1 });
+        scheduledTime: { $gt: completedAppointment.scheduledTime }
+      }).sort({ scheduledTime: 1 });
 
       // Reschedule remaining appointments (move them earlier)
       const currentTime = new Date();
@@ -42,17 +42,17 @@ class QueueManager {
       const rescheduledAppointments = [];
 
       for (const appointment of pendingAppointments) {
-        const originalTime = appointment.appointmentTime;
+        const originalTime = appointment.scheduledTime;
         
         // Update appointment time
-        appointment.appointmentTime = new Date(newTime);
+        appointment.scheduledTime = new Date(newTime);
         appointment.rescheduledFrom = originalTime;
         appointment.rescheduledReason = 'Previous consultation completed early';
         
         await appointment.save();
         rescheduledAppointments.push({
           appointmentId: appointment._id,
-          patientId: appointment.patientId,
+          patientId: appointment.patient,
           originalTime: originalTime,
           newTime: new Date(newTime)
         });
@@ -81,17 +81,17 @@ class QueueManager {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const appointments = await Appointment.find({
-        doctorId: doctorId,
-        appointmentDate: { $gte: today, $lt: tomorrow }
+        doctor: doctorId,
+        scheduledTime: { $gte: today, $lt: tomorrow }
       })
-      .populate('patientId', 'name phone email')
-      .sort({ appointmentTime: 1 });
+      .populate('patient', 'name phone email')
+      .sort({ scheduledTime: 1 });
 
       const queue = appointments.map((apt, index) => ({
         _id: apt._id,
-        patient: apt.patientId,
-        appointmentTime: apt.appointmentTime,
-        symptoms: apt.symptoms,
+        patient: apt.patient,
+        appointmentTime: apt.scheduledTime,
+        symptoms: Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : apt.symptoms,
         status: apt.status,
         position: index + 1,
         isNext: index === 0 && apt.status === 'scheduled',

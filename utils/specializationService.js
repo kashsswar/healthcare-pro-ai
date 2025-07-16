@@ -7,7 +7,7 @@ const openai = new OpenAI({
 // Comprehensive list of medical specializations
 const MEDICAL_SPECIALIZATIONS = [
   // Primary Care
-  'General Medicine', 'Family Medicine', 'Internal Medicine', 'Pediatrics',
+  'General Physician', 'General Medicine', 'Family Medicine', 'Internal Medicine', 'Pediatrics',
   
   // Surgical Specialties
   'General Surgery', 'Orthopedic Surgery', 'Neurosurgery', 'Cardiac Surgery',
