@@ -10,6 +10,7 @@ import AdminDoctorBoost from '../components/AdminDoctorBoost';
 import MarketingAnalytics from '../components/MarketingAnalytics';
 import ProfessionalAdminPanel from '../components/ProfessionalAdminPanel';
 import AdminMarketingHub from '../components/AdminMarketingHub';
+import AIMarketingDashboard from '../components/AIMarketingDashboard';
 
 function AdminDashboard() {
   const [stats, setStats] = useState({});
@@ -130,7 +131,7 @@ function AdminDashboard() {
       
       {tabValue === 1 && <MarketingAnalytics />}
       
-      {tabValue === 2 && <AdminMarketingHub />}
+      {tabValue === 2 && <AIMarketingDashboard />}
       
       {tabValue === 3 && <ProfessionalAdminPanel />}
 

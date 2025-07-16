@@ -46,11 +46,20 @@ function DoctorList({ user }) {
   const loadDoctors = async (category = null) => {
     try {
       setLoading(true);
-      const url = category ? `/api/doctors?category=${category}` : '/api/doctors';
-      const response = await fetch(url);
+      const response = await fetch('/api/doctors');
       const data = await response.json();
-      setDoctors(data);
-      setFilteredDoctors(data);
+      
+      if (category) {
+        // Filter doctors by selected category/specialization
+        const filtered = data.filter(doctor => 
+          doctor.specialization === category
+        );
+        setDoctors(filtered);
+        setFilteredDoctors(filtered);
+      } else {
+        setDoctors(data);
+        setFilteredDoctors(data);
+      }
     } catch (error) {
       console.error('Error loading doctors:', error);
     } finally {

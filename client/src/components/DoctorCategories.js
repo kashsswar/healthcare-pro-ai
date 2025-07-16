@@ -53,10 +53,10 @@ function DoctorCategories({ onCategorySelect, selectedCategory }) {
             <Card 
               sx={{ 
                 cursor: 'pointer',
-                bgcolor: selectedCategory === category.id ? 'primary.light' : 'background.paper',
+                bgcolor: selectedCategory === category.name ? 'primary.light' : 'background.paper',
                 '&:hover': { bgcolor: 'primary.light' }
               }}
-              onClick={() => onCategorySelect(category.id)}
+              onClick={() => onCategorySelect(category.name)}
             >
               <CardContent sx={{ textAlign: 'center', py: 2 }}>
                 <Typography variant="h4">{category.icon}</Typography>
@@ -66,7 +66,7 @@ function DoctorCategories({ onCategorySelect, selectedCategory }) {
                 <Chip 
                   label={`${category.count} doctors`} 
                   size="small" 
-                  color={selectedCategory === category.id ? 'primary' : 'default'}
+                  color={selectedCategory === category.name ? 'primary' : 'default'}
                 />
               </CardContent>
             </Card>

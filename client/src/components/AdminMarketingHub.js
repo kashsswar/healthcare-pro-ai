@@ -34,13 +34,27 @@ function AdminMarketingHub() {
   const sendBulkEmails = async () => {
     try {
       setSending(true);
+      setResult({ status: 'sending', message: 'Sending emails...' });
+      
       const response = await axios.post('/api/admin-marketing/send-bulk-emails', {
         contacts: marketingData.contactList,
         emailContent: marketingData.emailTemplate
       });
-      setResult(response.data);
+      
+      setResult({
+        success: true,
+        totalSent: response.data.totalSent || 0,
+        totalFailed: response.data.totalFailed || 0,
+        results: response.data.results || [],
+        message: `✅ Email campaign completed! Sent: ${response.data.totalSent || 0}, Failed: ${response.data.totalFailed || 0}`
+      });
     } catch (error) {
-      setResult({ error: 'Failed to send emails', details: error.message });
+      setResult({ 
+        success: false,
+        error: 'Failed to send emails', 
+        details: error.response?.data?.message || error.message,
+        message: `❌ Email sending failed: ${error.response?.data?.message || error.message}`
+      });
     } finally {
       setSending(false);
     }
@@ -138,11 +152,17 @@ function AdminMarketingHub() {
             size="large"
             startIcon={<Send />}
             onClick={sendBulkEmails}
-            disabled={sending || !marketingData?.contactList}
+            disabled={sending || !marketingData?.contactList?.length}
             sx={{ mr: 2 }}
           >
-            {sending ? 'Sending...' : `Send to ${marketingData?.contactList?.length || 0} Contacts`}
+            {sending ? '📧 Sending Emails...' : `📧 Send to ${marketingData?.contactList?.length || 0} Contacts`}
           </Button>
+          
+          {!marketingData?.contactList?.length && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              No contacts available. Contacts will appear here when people visit your website.
+            </Alert>
+          )}
 
           {sending && <CircularProgress size={24} sx={{ ml: 2 }} />}
         </CardContent>
@@ -152,23 +172,39 @@ function AdminMarketingHub() {
       {result && (
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>Sending Results</Typography>
-            {result.error ? (
-              <Alert severity="error">{result.error}: {result.details}</Alert>
-            ) : (
+            <Typography variant="h6" gutterBottom>📧 Email Campaign Results</Typography>
+            
+            <Alert 
+              severity={result.success === false ? 'error' : result.status === 'sending' ? 'info' : 'success'} 
+              sx={{ mb: 2 }}
+            >
+              {result.message}
+            </Alert>
+            
+            {result.success && result.results && (
               <>
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Emails sent successfully! Sent: {result.totalSent}, Failed: {result.totalFailed}
-                </Alert>
-                <List sx={{ maxHeight: 200, overflow: 'auto' }}>
-                  {result.results?.map((res, index) => (
-                    <ListItem key={index}>
+                <Typography variant="body2" sx={{ mb: 2 }}>
+                  📊 Campaign Summary: {result.totalSent} sent, {result.totalFailed} failed
+                </Typography>
+                
+                <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                  {result.results.map((res, index) => (
+                    <ListItem key={index} divider>
                       <ListItemText
-                        primary={res.contact}
-                        secondary={`${res.email} - ${res.status}`}
+                        primary={res.contact || res.email}
+                        secondary={
+                          <Box>
+                            <Typography variant="body2">{res.email}</Typography>
+                            {res.error && (
+                              <Typography variant="caption" color="error">
+                                Error: {res.error}
+                              </Typography>
+                            )}
+                          </Box>
+                        }
                       />
                       <Chip 
-                        label={res.status} 
+                        label={res.status === 'sent' ? '✅ Sent' : '❌ Failed'} 
                         color={res.status === 'sent' ? 'success' : 'error'} 
                         size="small" 
                       />
@@ -176,6 +212,18 @@ function AdminMarketingHub() {
                   ))}
                 </List>
               </>
+            )}
+            
+            {result.success === false && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Common Issues:</strong><br/>
+                  • Check if EMAIL_USER and EMAIL_PASS are set in environment variables<br/>
+                  • Verify Gmail App Password is correct<br/>
+                  • Ensure 2FA is enabled on Gmail account<br/>
+                  • Check if SMTP settings are correct
+                </Typography>
+              </Alert>
             )}
           </CardContent>
         </Card>

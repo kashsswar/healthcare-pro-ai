@@ -48,9 +48,16 @@ const ProfessionalAdminPanel = () => {
       setSelectedDoctor('');
       setBoostValue(0);
       setReason('');
-      fetchDoctors();
+      
+      // Force refresh data
+      await fetchDoctors();
+      await fetchAnalytics();
+      
+      // Auto-clear message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('❌ Error: ' + error.response?.data?.message);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
@@ -65,9 +72,20 @@ const ProfessionalAdminPanel = () => {
       const content = response.data.campaigns.whatsapp;
       navigator.clipboard.writeText(content);
       setMessage('🚀 Viral campaign content copied to clipboard!');
+      
+      // Auto-clear message
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('Error generating campaign: ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
     }
+  };
+
+  const refreshData = async () => {
+    setMessage('🔄 Refreshing data...');
+    await Promise.all([fetchDoctors(), fetchAnalytics()]);
+    setMessage('✅ Data refreshed successfully!');
+    setTimeout(() => setMessage(''), 2000);
   };
 
   return (
@@ -84,12 +102,18 @@ const ProfessionalAdminPanel = () => {
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Select Doctor for Enhancement</InputLabel>
               <Select value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)}>
-                {doctors.map(doctor => (
-                  <MenuItem key={doctor._id} value={doctor._id}>
-                    Dr. {doctor.userId?.name} - {doctor.specialization} 
-                    <Chip label={`${doctor.finalRating}/5`} size="small" sx={{ ml: 1 }} />
+                {doctors.length === 0 ? (
+                  <MenuItem disabled>
+                    No doctors registered yet - Share registration link!
                   </MenuItem>
-                ))}
+                ) : (
+                  doctors.map(doctor => (
+                    <MenuItem key={doctor._id} value={doctor._id}>
+                      Dr. {doctor.userId?.name} - {doctor.specialization} 
+                      <Chip label={`${doctor.finalRating || doctor.rating || 4.0}/5`} size="small" sx={{ ml: 1 }} />
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
 
@@ -112,15 +136,25 @@ const ProfessionalAdminPanel = () => {
               sx={{ mb: 2 }}
             />
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button 
                 variant="contained" 
                 onClick={handleBoost} 
-                disabled={!selectedDoctor || !boostValue}
+                disabled={!selectedDoctor || !boostValue || doctors.length === 0}
                 startIcon={<TrendingUp />}
               >
-                Apply Enhancement
+                {doctors.length === 0 ? 'No Doctors Available' : 'Apply Enhancement'}
               </Button>
+              
+              {doctors.length === 0 && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>No doctors registered yet!</strong><br/>
+                    Share this registration link with doctors:<br/>
+                    <code>https://healthcare-pro-ai.onrender.com/register</code>
+                  </Typography>
+                </Alert>
+              )}
               
               <Button 
                 variant="outlined" 
@@ -129,6 +163,14 @@ const ProfessionalAdminPanel = () => {
                 startIcon={<Share />}
               >
                 Generate Viral Campaign
+              </Button>
+              
+              <Button 
+                variant="text" 
+                onClick={refreshData}
+                startIcon={<MonetizationOn />}
+              >
+                🔄 Refresh Data
               </Button>
             </Box>
           </Card>

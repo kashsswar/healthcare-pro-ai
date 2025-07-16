@@ -1,26 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, Typography, Card, CardContent, Grid, Chip, Button, 
   Avatar, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails,
-  Autocomplete, FormControl
+  Autocomplete, FormControl, Snackbar, Alert
 } from '@mui/material';
-import { Search, ExpandMore, Star, Verified, Schedule, LocationOn, FilterList } from '@mui/icons-material';
+import { Search, ExpandMore, Star, Verified, Schedule, LocationOn, FilterList, AutoAwesome } from '@mui/icons-material';
 import axios from 'axios';
 
-const PatientDoctorSearch = ({ onBookAppointment }) => {
+const PatientDoctorSearch = ({ onBookAppointment, selectedCategory }) => {
   const [doctorsBySpec, setDoctorsBySpec] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredSpecs, setFilteredSpecs] = useState({});
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
   const [availableSpecs, setAvailableSpecs] = useState([]);
+  const [refreshNotification, setRefreshNotification] = useState('');
+  const [showNotification, setShowNotification] = useState(false);
+  const [aiRefreshActive, setAiRefreshActive] = useState(true);
+  const activityRef = useRef({
+    lastSearch: new Date(),
+    searchCount: 0,
+    timeSpent: 0,
+    lastRefresh: new Date()
+  });
+  const refreshIntervalRef = useRef(null);
 
   useEffect(() => {
     fetchDoctorsBySpecialization();
+    if (aiRefreshActive) {
+      startAIRefresh();
+    }
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
     filterSpecializations();
-  }, [searchTerm, doctorsBySpec, selectedSpecialization]);
+  }, [searchTerm, doctorsBySpec, selectedSpecialization, selectedCategory]);
 
   useEffect(() => {
     setAvailableSpecs(Object.keys(doctorsBySpec));
@@ -28,7 +46,7 @@ const PatientDoctorSearch = ({ onBookAppointment }) => {
 
   const fetchDoctorsBySpecialization = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await axios.get(`${apiUrl}/api/doctors/by-specialization`);
       setDoctorsBySpec(response.data);
     } catch (error) {
@@ -36,11 +54,78 @@ const PatientDoctorSearch = ({ onBookAppointment }) => {
     }
   };
 
+  const refreshDoctors = async () => {
+    await fetchDoctorsBySpecialization();
+  };
+
+  const startAIRefresh = async () => {
+    try {
+      // Get AI-determined refresh interval
+      const intervalResponse = await axios.post('/api/ai/refresh-interval', {
+        userType: 'patient',
+        currentActivity: {
+          engagement: 'high',
+          sessionDuration: Math.floor(activityRef.current.timeSpent),
+          actionFrequency: activityRef.current.searchCount,
+          dataSensitivity: 'medium'
+        }
+      });
+      
+      const interval = intervalResponse.data.interval * 1000; // Convert to milliseconds
+      
+      refreshIntervalRef.current = setInterval(async () => {
+        await checkAIRefresh();
+      }, interval);
+      
+    } catch (error) {
+      // Fallback to 3-minute intervals
+      refreshIntervalRef.current = setInterval(async () => {
+        await checkAIRefresh();
+      }, 180000);
+    }
+  };
+
+  const checkAIRefresh = async () => {
+    try {
+      const response = await axios.post('/api/ai/should-refresh-patient', {
+        patientActivity: activityRef.current,
+        lastRefresh: activityRef.current.lastRefresh
+      });
+      
+      if (response.data.shouldRefresh) {
+        await fetchDoctorsBySpecialization();
+        activityRef.current.lastRefresh = new Date();
+        
+        // Get AI-generated notification
+        const notificationResponse = await axios.post('/api/ai/refresh-notification', {
+          userType: 'patient',
+          refreshReason: response.data.reason,
+          newDataSummary: 'Updated doctor availability and recommendations'
+        });
+        
+        setRefreshNotification(notificationResponse.data.message);
+        setShowNotification(true);
+      }
+    } catch (error) {
+      console.log('AI refresh check failed, using fallback');
+    }
+  };
+
+  const trackActivity = (action) => {
+    activityRef.current.searchCount++;
+    activityRef.current.lastSearch = new Date();
+    activityRef.current.timeSpent = (Date.now() - activityRef.current.lastRefresh.getTime()) / 60000;
+  };
+
   const filterSpecializations = () => {
     let filtered = { ...doctorsBySpec };
 
-    // Filter by selected specialization
-    if (selectedSpecialization) {
+    // Filter by selected category from DoctorCategories component
+    if (selectedCategory) {
+      filtered = { [selectedCategory]: doctorsBySpec[selectedCategory] || [] };
+    }
+    // Filter by selected specialization from dropdown
+    else if (selectedSpecialization) {
       filtered = { [selectedSpecialization]: doctorsBySpec[selectedSpecialization] || [] };
     }
 
@@ -88,7 +173,33 @@ const PatientDoctorSearch = ({ onBookAppointment }) => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>🔍 Find Your Doctor</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">🔍 Find Your Doctor</Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Chip 
+            icon={<AutoAwesome />}
+            label={aiRefreshActive ? "AI Auto-Refresh ON" : "AI Auto-Refresh OFF"}
+            color={aiRefreshActive ? "success" : "default"}
+            size="small"
+            onClick={() => {
+              setAiRefreshActive(!aiRefreshActive);
+              if (!aiRefreshActive) {
+                startAIRefresh();
+              } else if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+              }
+            }}
+            sx={{ cursor: 'pointer' }}
+          />
+          <Button 
+            variant="outlined" 
+            onClick={refreshDoctors}
+            size="small"
+          >
+            🔄 Manual Refresh
+          </Button>
+        </Box>
+      </Box>
       
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
@@ -96,7 +207,10 @@ const PatientDoctorSearch = ({ onBookAppointment }) => {
             fullWidth
             placeholder="Search by doctor name..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              trackActivity('search');
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -230,6 +344,22 @@ const PatientDoctorSearch = ({ onBookAppointment }) => {
           </Typography>
         </Box>
       )}
+      
+      <Snackbar 
+        open={showNotification} 
+        autoHideDuration={4000} 
+        onClose={() => setShowNotification(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setShowNotification(false)} 
+          severity="info" 
+          icon={<AutoAwesome />}
+          sx={{ width: '100%' }}
+        >
+          {refreshNotification}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
