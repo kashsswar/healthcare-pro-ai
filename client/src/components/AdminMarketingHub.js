@@ -34,27 +34,46 @@ function AdminMarketingHub() {
   const sendBulkEmails = async () => {
     try {
       setSending(true);
-      setResult({ status: 'sending', message: 'Sending emails...' });
+      setResult({ status: 'sending', message: '📧 Starting email campaign...' });
+      
+      // Show immediate feedback
+      setTimeout(() => {
+        if (sending) {
+          setResult({ status: 'sending', message: '📧 Connecting to email server...' });
+        }
+      }, 1000);
       
       const response = await axios.post('/api/admin-marketing/send-bulk-emails', {
         contacts: marketingData.contactList,
         emailContent: marketingData.emailTemplate
       });
       
+      // Success response
       setResult({
         success: true,
         totalSent: response.data.totalSent || 0,
         totalFailed: response.data.totalFailed || 0,
         results: response.data.results || [],
-        message: `✅ Email campaign completed! Sent: ${response.data.totalSent || 0}, Failed: ${response.data.totalFailed || 0}`
+        message: `✅ SUCCESS! Email campaign completed!\n• Sent: ${response.data.totalSent || 0} emails\n• Failed: ${response.data.totalFailed || 0} emails`
       });
+      
+      // Show success alert
+      alert(`✅ EMAIL CAMPAIGN COMPLETED!\n\nSent: ${response.data.totalSent || 0}\nFailed: ${response.data.totalFailed || 0}`);
+      
     } catch (error) {
+      const errorMsg = error.response?.data?.message || error.message;
+      const errorDetails = error.response?.data?.error || 'Unknown error';
+      
       setResult({ 
         success: false,
-        error: 'Failed to send emails', 
-        details: error.response?.data?.message || error.message,
-        message: `❌ Email sending failed: ${error.response?.data?.message || error.message}`
+        error: 'Email sending failed', 
+        details: errorMsg,
+        message: `❌ EMAIL SENDING FAILED!\n\nReason: ${errorMsg}\n\nSolution: Check email configuration in Render environment variables`
       });
+      
+      // Show error alert immediately
+      alert(`❌ EMAIL SENDING FAILED!\n\nError: ${errorMsg}\n\nSolution:\n• Add EMAIL_USER and EMAIL_PASS to Render\n• Use Gmail App Password (not regular password)\n• Enable 2FA on Gmail account`);
+      
     } finally {
       setSending(false);
     }
@@ -151,7 +170,11 @@ function AdminMarketingHub() {
             variant="contained" 
             size="large"
             startIcon={<Send />}
-            onClick={sendBulkEmails}
+            onClick={() => {
+              if (window.confirm(`Send emails to ${marketingData?.contactList?.length || 0} contacts?\n\nThis will use your configured email account.`)) {
+                sendBulkEmails();
+              }
+            }}
             disabled={sending || !marketingData?.contactList?.length}
             sx={{ mr: 2 }}
           >
