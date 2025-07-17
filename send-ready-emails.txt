@@ -1,0 +1,26 @@
+READY-TO-SEND EMAIL ADDRESSES:
+
+Epic Systems - partnerships@epic.com
+Teladoc Health - bd@teladoc.com  
+Amwell - partnerships@amwell.com
+athenahealth - partnerships@athenahealth.com
+Cerner Corporation - solutions@cerner.com
+Allscripts - partnerships@allscripts.com
+
+Kaiser Permanente - innovation@kp.org
+Mayo Clinic - ventures@mayo.edu
+Cleveland Clinic - innovations@ccf.org
+
+Andreessen Horowitz - healthcare@a16z.com
+GV (Google Ventures) - healthcare@gv.com
+Kleiner Perkins - healthcare@kpcb.com
+
+UnitedHealth - innovation@uhg.com
+Anthem - partnerships@anthem.com
+Humana - innovation@humana.com
+
+SUBJECT LINE: "Healthcare Platform Acquisition - [Company Name]"
+
+COPY THE HTML EMAIL TEMPLATE FROM sales-email-template.html
+REPLACE [COMPANY_NAME] WITH ACTUAL COMPANY NAME
+SEND TO ABOVE EMAILS

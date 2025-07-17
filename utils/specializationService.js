@@ -4,57 +4,20 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Comprehensive list of medical specializations
+// Main 12 medical specializations
 const MEDICAL_SPECIALIZATIONS = [
-  // Primary Care
-  'General Physician', 'General Medicine', 'Family Medicine', 'Internal Medicine', 'Pediatrics',
-  
-  // Surgical Specialties
-  'General Surgery', 'Orthopedic Surgery', 'Neurosurgery', 'Cardiac Surgery',
-  'Plastic Surgery', 'Vascular Surgery', 'Thoracic Surgery',
-  
-  // Medical Specialties
-  'Cardiology', 'Neurology', 'Gastroenterology', 'Pulmonology',
-  'Nephrology', 'Endocrinology', 'Rheumatology', 'Hematology',
-  'Oncology', 'Infectious Diseases',
-  
-  // Diagnostic Specialties
-  'Radiology', 'Pathology', 'Nuclear Medicine', 'Laboratory Medicine',
-  
-  // Women & Children
-  'Obstetrics & Gynecology', 'Pediatric Surgery', 'Neonatology',
-  'Pediatric Cardiology', 'Pediatric Neurology',
-  
-  // Mental Health
-  'Psychiatry', 'Psychology', 'Child Psychology', 'Addiction Medicine',
-  
-  // Sensory Specialties
-  'Ophthalmology', 'ENT (Ear, Nose, Throat)', 'Audiology', 'Optometry',
-  
-  // Skin & Cosmetic
-  'Dermatology', 'Cosmetic Surgery', 'Dermatopathology',
-  
-  // Dental Specialties
-  'Dentistry', 'Oral Surgery', 'Orthodontics', 'Periodontics',
-  'Endodontics', 'Prosthodontics', 'Pediatric Dentistry',
-  
-  // Emergency & Critical Care
-  'Emergency Medicine', 'Critical Care Medicine', 'Trauma Surgery',
-  'Anesthesiology', 'Pain Management',
-  
-  // Rehabilitation
-  'Physical Medicine & Rehabilitation', 'Physiotherapy', 'Occupational Therapy',
-  'Speech Therapy',
-  
-  // Alternative Medicine
-  'Ayurveda', 'Homeopathy', 'Unani', 'Naturopathy', 'Acupuncture',
-  
-  // Specialized Fields
-  'Sports Medicine', 'Geriatrics', 'Palliative Care', 'Sleep Medicine',
-  'Allergy & Immunology', 'Medical Genetics', 'Preventive Medicine',
-  
-  // Other
-  'Other (Please Specify)'
+  'General Medicine',
+  'Cardiology', 
+  'Dermatology',
+  'Pediatrics',
+  'Orthopedics',
+  'Gynecology',
+  'Neurology',
+  'Psychiatry',
+  'Dentistry',
+  'Ophthalmology',
+  'ENT',
+  'General Surgery'
 ];
 
 class SpecializationService {

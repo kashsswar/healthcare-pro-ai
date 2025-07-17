@@ -1,0 +1,37 @@
+📧 COMPLETE EMAIL LIST - KARISHMA SINSINWAR
+
+=== PRIVATE COMPANIES ===
+Epic Systems: partnerships@epic.com
+Teladoc Health: bd@teladoc.com  
+Amwell: partnerships@amwell.com
+athenahealth: partnerships@athenahealth.com
+Cerner Corporation: solutions@cerner.com
+Kaiser Permanente: innovation@kp.org
+Mayo Clinic: ventures@mayo.edu
+Andreessen Horowitz: healthcare@a16z.com
+GV (Google Ventures): healthcare@gv.com
+UnitedHealth: innovation@uhg.com
+
+=== INDIAN GOVERNMENT ===
+Ministry of Health & Family Welfare: webmaster.mohfw@gov.in
+NITI Aayog: ceo@niti.gov.in
+National Health Authority: grievance@nha.gov.in
+Ministry of Electronics & IT: secretary@meity.gov.in
+
+=== STATE GOVERNMENTS ===
+Delhi Health Department: secy-health@delhi.gov.in
+Maharashtra Health: health.mah@gov.in
+Karnataka Health: secy-health@karnataka.gov.in
+Tamil Nadu Health: secy-health@tn.gov.in
+Gujarat Health: secy-health@gujarat.gov.in
+Uttar Pradesh Health: secy-health@up.gov.in
+West Bengal Health: secy-health@wb.gov.in
+Rajasthan Health: secy-health@rajasthan.gov.in
+
+INSTRUCTIONS:
+1. Use sales-email-template.html for PRIVATE companies
+2. Use government-email-template.html for GOVERNMENT contacts
+3. Replace [YOUR_EMAIL] with your actual contact details
+4. Send with subject: "Healthcare Platform Acquisition/Implementation"
+
+FROM: Karishma Sinsinwar, Sinsinwar Healthcare Solutions

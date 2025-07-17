@@ -1,0 +1,33 @@
+SMART EMAIL STRATEGY FOR KARISHMA SINSINWAR
+
+❌ DON'T: Send to all emails at once (will be marked as spam)
+
+✅ DO: Send in batches with personalization
+
+BATCH 1 (Day 1) - Top Priority:
+- Teladoc Health: bd@teladoc.com
+- Amwell: partnerships@amwell.com  
+- athenahealth: partnerships@athenahealth.com
+- Ministry of Health: webmaster.mohfw@gov.in
+- NITI Aayog: ceo@niti.gov.in
+
+BATCH 2 (Day 3) - Second Priority:
+- Epic Systems: partnerships@epic.com
+- Cerner: solutions@cerner.com
+- Kaiser Permanente: innovation@kp.org
+- Delhi Health: secy-health@delhi.gov.in
+- Maharashtra Health: health.mah@gov.in
+
+BATCH 3 (Day 5) - Third Priority:
+- Remaining companies and state governments
+
+PERSONALIZATION TIPS:
+1. Change "Dear Healthcare Innovation Team" to "Dear [Company] Team"
+2. Add 1-2 sentences specific to each company
+3. Use BCC if sending to multiple emails
+4. Wait 2-3 days between batches
+5. Follow up after 1 week if no response
+
+SUBJECT LINES:
+Private: "Healthcare Platform Acquisition - [Company Name]"
+Government: "Digital Healthcare Platform - Supporting Digital India Mission"

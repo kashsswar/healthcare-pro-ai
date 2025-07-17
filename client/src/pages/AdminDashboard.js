@@ -10,6 +10,7 @@ import AdminDoctorBoost from '../components/AdminDoctorBoost';
 import MarketingAnalytics from '../components/MarketingAnalytics';
 import ProfessionalAdminPanel from '../components/ProfessionalAdminPanel';
 import AdminMarketingHub from '../components/AdminMarketingHub';
+import AdminDoctorsList from '../components/AdminDoctorsList';
 import AIMarketingDashboard from '../components/AIMarketingDashboard';
 
 function AdminDashboard() {
@@ -112,6 +113,7 @@ function AdminDashboard() {
           <Tab label="📊 Overview" />
           <Tab label="📈 Marketing Analytics" />
           <Tab label="🚀 Auto Marketing" />
+          <Tab label="👨‍⚕️ Doctors List" />
           <Tab label="⚙️ Admin Controls" />
         </Tabs>
       </Card>
@@ -131,9 +133,11 @@ function AdminDashboard() {
       
       {tabValue === 1 && <MarketingAnalytics />}
       
-      {tabValue === 2 && <AIMarketingDashboard />}
+      {tabValue === 2 && <AdminMarketingHub />}
       
-      {tabValue === 3 && <ProfessionalAdminPanel />}
+      {tabValue === 3 && <AdminDoctorsList />}
+      
+      {tabValue === 4 && <ProfessionalAdminPanel />}
 
       {tabValue === 0 && (
         <>
