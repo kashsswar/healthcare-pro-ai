@@ -94,7 +94,7 @@ router.post('/share-doctor', async (req, res) => {
     const shareContent = {
       message: `🏥 Found an excellent ${doctor.specialization} doctor!\n\n👨‍⚕️ Dr. ${doctor.userId.name}\n⭐ Rating: ${doctor.finalRating}/5\n💰 Fee: ₹${doctor.consultationFee}\n📱 Book online: [App Link]\n\n#HealthCare #Doctor #${doctor.specialization}`,
       whatsappLink: `https://wa.me/?text=${encodeURIComponent('🏥 Found an excellent doctor! Download HealthCare app to book appointment with Dr. ' + doctor.userId.name)}`,
-      incentive: shareType === 'referral' ? '🎁 Get ₹50 discount on your next appointment!' : null
+      incentive: null
     };
 
     res.json({ shareContent, message: 'Share tracked successfully' });
@@ -126,8 +126,8 @@ router.get('/marketing-analytics', async (req, res) => {
     ]);
     
     const marketingContent = {
-      whatsapp_doctors: "🏥 *DOCTORS: EARN ₹500 per referral!*\n\n💰 *Monthly Earning Potential: ₹15,000+*\n\n✅ Refer 1 doctor = ₹500\n✅ Refer 1 patient = ₹100\n✅ Instant bank transfer",
-      linkedin_doctors: "💰 Healthcare professionals earning ₹15,000+ monthly!\n\n🎯 Join HealthcarePro:\n• ₹500 per doctor referral\n• ₹100 per patient referral\n• AI-powered patient matching",
+      whatsapp_doctors: "🏥 *DOCTORS: Expand Your Practice Online*\n\n💼 *Join Healthcare Pro AI Platform*\n\n✅ Reach more patients digitally\n✅ Flexible online consultations\n✅ Professional growth opportunities",
+      linkedin_doctors: "👨‍⚕️ Healthcare professionals expanding online!\n\n🎯 Join HealthcarePro:\n• Connect with more patients\n• AI-powered patient matching\n• Professional online presence",
       whatsapp_patients: "🏥 *Found the BEST healthcare app!*\n\n✅ AI finds perfect doctor for your symptoms\n✅ Book appointments in 30 seconds\n✅ Real-time queue updates",
       social_patients: "🏥 Revolutionary healthcare experience!\n\n✨ AI-powered doctor matching\n✨ Instant appointments\n✨ Real-time updates\n✨ Personalized health tips"
     };

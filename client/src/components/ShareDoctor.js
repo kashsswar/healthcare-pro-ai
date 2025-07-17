@@ -14,7 +14,7 @@ function ShareDoctor({ doctor, open, onClose }) {
 
   const shareContent = {
     message: `🏥 मिला बेहतरीन डॉक्टर! Found excellent doctor!\n\n👨‍⚕️ Dr. ${doctor.userId?.name || 'Doctor'}\n🏥 ${doctor.specialization || 'Healthcare'}\n⭐ Rating: ${doctor.finalRating || doctor.rating || 4.5}/5\n💰 Fee: ₹${doctor.consultationFee || 500}\n📱 Book online instantly!\n\n#HealthCare #Doctor #${doctor.specialization || 'Healthcare'}`,
-    incentive: '🎁 Share करने पर ₹50 discount! Get ₹50 off your next appointment!'
+    incentive: '🎁 Share and help others find quality healthcare!'
   };
 
   const handleWhatsAppShare = () => {
@@ -32,7 +32,7 @@ function ShareDoctor({ doctor, open, onClose }) {
   const handleReferralShare = () => {
     const referralMessage = `🏥 मैंने इस डॉक्टर से इलाज कराया है, बहुत अच्छा है!\n\n${shareContent.message}\n\n${shareContent.incentive}`;
     navigator.clipboard.writeText(referralMessage);
-    setSnackbar({ open: true, message: 'Referral message copied! You both get ₹50 discount 🎁' });
+    setSnackbar({ open: true, message: 'Referral message copied! Help friends find quality healthcare 🎁' });
     trackShare('referral');
   };
 
@@ -64,8 +64,8 @@ function ShareDoctor({ doctor, open, onClose }) {
         
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-            💡 Share करके अपने दोस्तों की मदद करें और ₹50 discount पाएं!
-            Help friends & get ₹50 discount!
+            💡 Share करके अपने दोस्तों की मदद करें!
+            Help friends find quality healthcare!
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -87,7 +87,7 @@ function ShareDoctor({ doctor, open, onClose }) {
               fullWidth
               sx={{ py: 1.5 }}
             >
-              👥 दोस्तों को Refer करें / Refer Friends (₹50 each)
+              👥 दोस्तों को Refer करें / Refer Friends
             </Button>
 
             <Button
@@ -106,10 +106,10 @@ function ShareDoctor({ doctor, open, onClose }) {
               🎁 Sharing Benefits:
             </Typography>
             <Typography variant="body2">
-              • You get ₹50 discount on next appointment
-              • Your friend gets ₹50 discount too
-              • Help spread quality healthcare
+              • Help friends find quality healthcare
               • Support local doctors
+              • Build a healthier community
+              • Spread awareness about online consultations
             </Typography>
           </Box>
         </DialogContent>

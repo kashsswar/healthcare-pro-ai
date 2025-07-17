@@ -212,7 +212,7 @@ function DoctorList({ user }) {
                   onClick={() => setShareDoctor(doctor)}
                   size="small"
                 >
-                  📱 Share & Get ₹50
+                  📱 Share Doctor
                 </Button>
               </Box>
             </Card>
