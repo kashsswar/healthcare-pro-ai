@@ -24,7 +24,15 @@ router.post('/book', async (req, res) => {
     }
     
     // Simple time slot assignment (fallback for complex scheduling)
-    const preferredDateTime = new Date(preferredDate);
+    let preferredDateTime;
+    if (preferredDate) {
+      preferredDateTime = new Date(preferredDate);
+    } else {
+      // Default to next hour if no date provided
+      preferredDateTime = new Date();
+      preferredDateTime.setHours(preferredDateTime.getHours() + 1, 0, 0, 0);
+    }
+    
     let optimalSlot;
     
     try {
@@ -36,9 +44,18 @@ router.post('/book', async (req, res) => {
     } catch (error) {
       // Fallback: use preferred time or next available hour
       optimalSlot = new Date(preferredDateTime);
-      optimalSlot.setHours(preferredDateTime.getHours() || 10, 0, 0, 0);
+      if (isNaN(optimalSlot.getTime())) {
+        optimalSlot = new Date();
+        optimalSlot.setHours(optimalSlot.getHours() + 1, 0, 0, 0);
+      }
     }
 
+    // Ensure optimalSlot is valid
+    if (!optimalSlot || isNaN(optimalSlot.getTime())) {
+      optimalSlot = new Date();
+      optimalSlot.setHours(optimalSlot.getHours() + 1, 0, 0, 0);
+    }
+    
     const appointment = new Appointment({
       patient: patientId,
       doctor: doctorId,
@@ -234,7 +251,21 @@ router.post('/book-simple', async (req, res) => {
   try {
     const { patientId, doctorId, appointmentDate, appointmentTime, symptoms } = req.body;
     
-    const scheduledDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
+    let scheduledDateTime;
+    if (appointmentDate && appointmentTime) {
+      scheduledDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
+    } else {
+      // Default to next hour if no date/time provided
+      scheduledDateTime = new Date();
+      scheduledDateTime.setHours(scheduledDateTime.getHours() + 1, 0, 0, 0);
+    }
+    
+    // Ensure valid date
+    if (isNaN(scheduledDateTime.getTime())) {
+      scheduledDateTime = new Date();
+      scheduledDateTime.setHours(scheduledDateTime.getHours() + 1, 0, 0, 0);
+    }
+    
     const estimatedEndTime = new Date(scheduledDateTime.getTime() + 30 * 60000); // 30 minutes later
     
     // Create appointment directly

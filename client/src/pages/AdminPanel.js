@@ -63,7 +63,7 @@ function AdminPanel() {
       
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
-          🎯 Boost Your Siblings' Ratings
+          👥 Doctor Management
         </Typography>
         
         <TableContainer>

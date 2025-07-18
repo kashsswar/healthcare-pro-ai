@@ -6,49 +6,86 @@ const router = express.Router();
 router.get('/marketing-dashboard', async (req, res) => {
   try {
     const contactList = [
-      { name: 'Healthline', email: 'partnerships@healthline.com', category: 'Health Blog', status: 'pending' },
-      { name: 'WebMD', email: 'business@webmd.com', category: 'Medical Info', status: 'pending' },
-      { name: 'Medical News Today', email: 'partnerships@medicalnewstoday.com', category: 'Medical News', status: 'pending' },
-      { name: 'Verywell Health', email: 'partnerships@verywellhealth.com', category: 'Health Advice', status: 'pending' },
-      { name: 'Mayo Clinic', email: 'socialmedia@mayo.edu', category: 'Medical Institution', status: 'pending' },
-      { name: 'MyFitnessPal', email: 'partnerships@myfitnesspal.com', category: 'Fitness', status: 'pending' },
-      { name: 'Yoga Journal', email: 'editor@yogajournal.com', category: 'Wellness', status: 'pending' },
-      { name: 'Men\'s Health', email: 'mh-letters@hearst.com', category: 'Men\'s Fitness', status: 'pending' },
-      { name: 'Women\'s Health', email: 'letters@womenshealthmag.com', category: 'Women\'s Wellness', status: 'pending' },
-      { name: 'Shape Magazine', email: 'shape@shape.com', category: 'Fitness Lifestyle', status: 'pending' }
+      { name: 'Epic Systems', email: 'partnerships@epic.com', category: 'Healthcare Tech', status: 'pending' },
+      { name: 'Teladoc Health', email: 'bd@teladoc.com', category: 'Telemedicine', status: 'pending' },
+      { name: 'Amwell', email: 'partnerships@amwell.com', category: 'Digital Health', status: 'pending' },
+      { name: 'athenahealth', email: 'partnerships@athenahealth.com', category: 'Healthcare Software', status: 'pending' },
+      { name: 'Mayo Clinic', email: 'ventures@mayo.edu', category: 'Medical Institution', status: 'pending' },
+      { name: 'Ministry of Health India', email: 'webmaster.mohfw@gov.in', category: 'Government', status: 'pending' },
+      { name: 'NITI Aayog', email: 'ceo@niti.gov.in', category: 'Policy Think Tank', status: 'pending' },
+      { name: 'National Health Authority', email: 'grievance@nha.gov.in', category: 'Government Health', status: 'pending' },
+      { name: 'Delhi Health Dept', email: 'secy-health@delhi.gov.in', category: 'State Government', status: 'pending' },
+      { name: 'Maharashtra Health', email: 'health.mah@gov.in', category: 'State Government', status: 'pending' }
     ];
 
+    const whatsappTemplate = `🏥 *Healthcare Revolution is Here!*
+
+👨‍⚕️ *Healthcare Pro AI* - India's Most Advanced Medical Platform
+
+✅ *500+ Verified Doctors*
+✅ *12+ Specializations*
+✅ *AI-Powered Matching*
+✅ *Instant Appointments*
+✅ *24/7 Availability*
+
+🚀 *Perfect for:*
+• Hospitals seeking digital transformation
+• Clinics wanting online presence
+• Healthcare startups
+• Government health initiatives
+
+💼 *Partnership Opportunities Available*
+
+🔗 *Live Demo:* https://healthcare-pro-ai.onrender.com
+
+📞 *Contact:* Karishma Sinsinwar
+📧 *Email:* karishma@healthcarepro.ai
+
+*Let's revolutionize healthcare together!* 🌟`;
+    
     const embedCode = `<iframe src="https://healthcare-pro-ai.onrender.com/embed" width="320" height="200" frameborder="0"></iframe>`;
     
-    const emailTemplate = `Subject: Free Health Widget for [Website Name]
+    const emailTemplate = `Subject: Healthcare Platform Partnership Opportunity
 
-Hi [Name],
+Dear [Name],
 
-I noticed [Website Name] provides valuable health content to your audience.
+I hope this email finds you well. I'm reaching out from Healthcare Pro AI, a comprehensive digital healthcare platform that's transforming how patients connect with healthcare providers.
 
-Would you be interested in a free health awareness widget that provides daily health tips and connects visitors with verified doctors?
+🏥 About Healthcare Pro AI:
+• AI-powered doctor-patient matching
+• 500+ verified healthcare professionals
+• 12+ medical specializations
+• Real-time appointment scheduling
+• Secure consultation platform
 
-🔹 Completely free to use
-🔹 Non-intrusive design
-🔹 Adds value to your visitors
-🔹 Professional medical content
+🤝 Partnership Opportunity:
+We're seeking strategic partnerships with leading healthcare organizations like [Website Name] to:
+• Expand healthcare accessibility
+• Integrate our platform with your existing systems
+• Provide white-label solutions
+• Joint marketing initiatives
 
-Preview: https://healthcare-pro-ai.onrender.com/embed
+📊 Platform Statistics:
+• 10,000+ successful consultations
+• 95% patient satisfaction rate
+• 24/7 availability
+• HIPAA compliant infrastructure
 
-Embed code:
-<iframe src="https://healthcare-pro-ai.onrender.com/embed" width="320" height="200" frameborder="0"></iframe>
+🔗 Live Platform: https://healthcare-pro-ai.onrender.com
 
-The widget rotates through authentic health tips and allows visitors to connect with healthcare professionals when needed.
-
-Would you like to try it on your site?
+I would love to schedule a brief call to discuss how we can collaborate to improve healthcare delivery in your region.
 
 Best regards,
-Healthcare Pro AI Team`;
+Karishma Sinsinwar
+Founder, Healthcare Pro AI
+Email: karishma@healthcarepro.ai
+Phone: +91-XXXXXXXXXX`;
 
     res.json({
       contactList,
       embedCode,
       emailTemplate,
+      whatsappTemplate,
       generatedAt: new Date().toISOString()
     });
   } catch (error) {

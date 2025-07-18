@@ -1,9 +1,9 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import io from 'socket.io-client';
-import { translations } from './utils/translations';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -20,9 +20,6 @@ import VoiceAssistant from './components/VoiceAssistant';
 import VisualHealthAlerts from './components/VisualHealthAlerts';
 import AccessibilityPanel from './components/AccessibilityPanel';
 
-const LanguageContext = createContext();
-export const useLanguage = () => useContext(LanguageContext);
-
 const theme = createTheme({
   palette: {
     primary: { main: '#2196f3' },
@@ -33,9 +30,6 @@ const theme = createTheme({
 function App() {
   const [user, setUser] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [language, setLanguage] = useState('en');
-  
-  const t = (key) => translations[language][key] || translations.en[key];
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -70,7 +64,7 @@ function App() {
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
@@ -136,7 +130,7 @@ function App() {
           </div>
         </Router>
       </ThemeProvider>
-    </LanguageContext.Provider>
+    </LanguageProvider>
   );
 }
 
