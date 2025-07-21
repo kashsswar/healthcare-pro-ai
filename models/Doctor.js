@@ -26,6 +26,8 @@ const doctorSchema = new mongoose.Schema({
   },
   isVerified: { type: Boolean, default: false },
   totalPatients: { type: Number, default: 0 },
+  isAvailable: { type: Boolean, default: true },
+  availabilityUpdatedAt: { type: Date, default: Date.now },
   marketingReach: {
     whatsappShares: { type: Number, default: 0 },
     referrals: { type: Number, default: 0 },
@@ -35,7 +37,8 @@ const doctorSchema = new mongoose.Schema({
     largeText: { type: Boolean, default: false },
     highContrast: { type: Boolean, default: false },
     voiceSupport: { type: Boolean, default: false }
-  }
+  },
+  liveStatus: { type: String, default: 'Available' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Doctor', doctorSchema);

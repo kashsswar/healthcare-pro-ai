@@ -37,6 +37,7 @@ app.use('/api/outreach-marketing', require('./routes/outreach-marketing'));
 app.use('/api/admin-marketing', require('./routes/admin-marketing'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/admin-users', require('./routes/admin-users'));
+app.use('/api/doctors', require('./routes/doctor-availability'));
 app.use('/api/admin', require('./routes/security'));
 
 // Socket.IO for real-time updates

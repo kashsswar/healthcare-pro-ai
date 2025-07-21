@@ -77,7 +77,7 @@ function AdminDoctorsList() {
         boostType: 'rating',
         boostValue: 0.5,
         reason: 'Admin boost for better visibility',
-        adminId: 'admin_001'
+        adminId: '507f1f77bcf86cd799439011'
       });
       loadDoctors();
       alert('Doctor boosted successfully!');

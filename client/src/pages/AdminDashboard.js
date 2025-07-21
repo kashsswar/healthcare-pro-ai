@@ -134,7 +134,7 @@ function AdminDashboard() {
       <Card sx={{ mb: 4 }}>
         <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
           <Tab label="📊 Overview" />
-          <Tab label="👥 Users Management" />
+          <Tab label="🗑️ Delete Users" />
           <Tab label="🛡️ Security Monitor" />
           <Tab label="👨‍⚕️ Doctors List" />
           <Tab label="⚙️ Admin Controls" />
@@ -154,7 +154,14 @@ function AdminDashboard() {
         </>
       )}
       
-      {tabValue === 1 && <AdminUsersManager />}
+      {tabValue === 1 && (
+        <Box>
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            ⚠️ <strong>DANGER ZONE:</strong> Deleting users will permanently remove all their data including appointments, medical history, and cannot be undone.
+          </Alert>
+          <AdminUsersManager />
+        </Box>
+      )}
       
       {tabValue === 2 && <SecurityThreatsMonitor />}
       

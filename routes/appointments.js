@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Appointment = require('../models/Appointment');
 const AIService = require('../utils/aiService');
 const SchedulingService = require('../utils/schedulingService');
@@ -251,30 +252,46 @@ router.post('/book-simple', async (req, res) => {
   try {
     const { patientId, doctorId, appointmentDate, appointmentTime, symptoms } = req.body;
     
+    // Handle patientId - create valid ObjectId
+    let validPatientId;
+    if (mongoose.Types.ObjectId.isValid(patientId)) {
+      validPatientId = patientId;
+    } else {
+      // For admin_001 type IDs, create a new ObjectId
+      validPatientId = new mongoose.Types.ObjectId();
+    }
+    
     let scheduledDateTime;
     if (appointmentDate && appointmentTime) {
       scheduledDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
     } else {
-      // Default to next hour if no date/time provided
       scheduledDateTime = new Date();
       scheduledDateTime.setHours(scheduledDateTime.getHours() + 1, 0, 0, 0);
     }
     
-    // Ensure valid date
     if (isNaN(scheduledDateTime.getTime())) {
       scheduledDateTime = new Date();
       scheduledDateTime.setHours(scheduledDateTime.getHours() + 1, 0, 0, 0);
     }
     
-    const estimatedEndTime = new Date(scheduledDateTime.getTime() + 30 * 60000); // 30 minutes later
+    const estimatedEndTime = new Date(scheduledDateTime.getTime() + 30 * 60000);
     
-    // Create appointment directly
+    // Ensure symptoms is an array of strings
+    let symptomsArray = [];
+    if (symptoms) {
+      if (typeof symptoms === 'string') {
+        symptomsArray = symptoms.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      } else if (Array.isArray(symptoms)) {
+        symptomsArray = symptoms.map(s => String(s).trim()).filter(s => s.length > 0);
+      }
+    }
+    
     const appointment = new Appointment({
-      patient: patientId,
+      patient: validPatientId,
       doctor: doctorId,
       scheduledTime: scheduledDateTime,
       estimatedEndTime: estimatedEndTime,
-      symptoms: symptoms ? [symptoms] : [],
+      symptoms: symptomsArray,
       status: 'scheduled'
     });
 

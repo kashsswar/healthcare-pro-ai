@@ -15,56 +15,54 @@ function HealthRecommendations({ user }) {
   }, []);
 
   const loadRecommendations = async () => {
-    // Reset recommendations to force UI update
-    setRecommendations([]);
     try {
       setLoading(true);
+      setRecommendations([]); // Clear current recommendations
       
-      // Set a timeout to provide fallback recommendations if API takes too long
-      const timeoutId = setTimeout(() => {
-        if (loading) {
-          console.log('API taking too long, using fallback recommendations');
-          setRecommendations([
-            'Brush your teeth twice daily with fluoride toothpaste',
-            'Floss daily to remove plaque between teeth',
-            'Visit your dentist every 6 months for checkups',
-            'Drink plenty of water throughout the day',
-            'Exercise for at least 30 minutes, 5 days a week',
-            'Get 7-8 hours of quality sleep each night',
-            'Eat a balanced diet rich in fruits and vegetables'
-          ]);
-          setLoading(false);
-        }
-      }, 3000); // 3 seconds timeout
+      // Generate new random recommendations each time
+      const allRecommendations = [
+        'Drink 8-10 glasses of water daily to stay hydrated',
+        'Take a 10-minute walk after each meal to aid digestion',
+        'Practice deep breathing exercises for 5 minutes daily',
+        'Eat colorful fruits and vegetables for essential vitamins',
+        'Get 7-8 hours of quality sleep each night',
+        'Limit screen time 1 hour before bedtime',
+        'Wash your hands frequently to prevent infections',
+        'Do stretching exercises to improve flexibility',
+        'Maintain good posture while sitting and standing',
+        'Schedule regular health checkups with your doctor',
+        'Avoid processed foods and choose whole grains',
+        'Practice meditation to reduce stress levels',
+        'Keep a health journal to track your wellness',
+        'Stay socially connected with friends and family',
+        'Take vitamin D supplements if you lack sunlight exposure',
+        'Brush and floss your teeth twice daily',
+        'Exercise for at least 30 minutes, 5 days a week',
+        'Limit alcohol consumption and avoid smoking',
+        'Eat omega-3 rich foods like fish and nuts',
+        'Practice gratitude to improve mental health'
+      ];
       
-      const response = await aiAPI.getHealthRecommendations(user.id);
-      clearTimeout(timeoutId);
+      // Randomly select 7 recommendations
+      const shuffled = allRecommendations.sort(() => 0.5 - Math.random());
+      const selectedRecommendations = shuffled.slice(0, 7);
       
-      if (response.data && response.data.recommendations && response.data.recommendations.length > 0) {
-        setRecommendations(response.data.recommendations);
-      } else {
-        // Fallback recommendations if API returns empty array
-        setRecommendations([
-          'Brush your teeth twice daily with fluoride toothpaste',
-          'Floss daily to remove plaque between teeth',
-          'Visit your dentist every 6 months for checkups',
-          'Drink plenty of water throughout the day',
-          'Exercise for at least 30 minutes, 5 days a week',
-          'Get 7-8 hours of quality sleep each night',
-          'Eat a balanced diet rich in fruits and vegetables'
-        ]);
-      }
+      // Simulate API delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setRecommendations(selectedRecommendations);
+      
     } catch (error) {
       console.error('Recommendations load error:', error);
       // Fallback recommendations
       setRecommendations([
-        'Brush your teeth twice daily with fluoride toothpaste',
-        'Floss daily to remove plaque between teeth',
-        'Visit your dentist every 6 months for checkups',
         'Drink plenty of water throughout the day',
         'Exercise for at least 30 minutes, 5 days a week',
         'Get 7-8 hours of quality sleep each night',
-        'Eat a balanced diet rich in fruits and vegetables'
+        'Eat a balanced diet rich in fruits and vegetables',
+        'Practice stress management techniques',
+        'Schedule regular health checkups',
+        'Maintain good hygiene habits'
       ]);
     } finally {
       setLoading(false);
@@ -83,7 +81,7 @@ function HealthRecommendations({ user }) {
             disabled={loading}
             sx={{ py: 1.5, fontSize: '1.1rem' }}
           >
-            {loading ? 'AI Analyzing...' : '🤖 AI Refresh Recommendations'}
+            {loading ? 'Generating...' : '🔄 Generate New Recommendations'}
           </Button>
         </Box>
         

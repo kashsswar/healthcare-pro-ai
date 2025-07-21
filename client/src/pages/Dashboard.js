@@ -8,6 +8,8 @@ import { appointmentAPI, aiAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import PatientDoctorSearch from '../components/PatientDoctorSearch';
 import AutoMarketing from '../components/AutoMarketing';
+import DoctorAvailabilityToggle from '../components/DoctorAvailabilityToggle';
+import DoctorAvailabilityChecker from '../components/DoctorAvailabilityChecker';
 
 
 function Dashboard({ user, socket }) {
@@ -71,33 +73,19 @@ function Dashboard({ user, socket }) {
           👨‍⚕️ Dr. {user.name} - {t('home')}
         </Typography>
         
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {t('todaysAppointments')}
-                </Typography>
-                <Typography variant="h3" color="primary">5</Typography>
-                <Button variant="contained" onClick={() => navigate('/queue/1')} sx={{ mt: 2 }}>
-                  {t('manageQueue')}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {t('patientAnalytics')}
-                </Typography>
-                <Typography variant="body2">{t('totalPatients')}: 250 👥</Typography>
-                <Typography variant="body2">{t('avgRating')}: 4.5/5 ⭐</Typography>
-                <Typography variant="body2">{t('thisMonth')}: 45 📅</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        {/* Doctor Availability Toggle */}
+        <DoctorAvailabilityToggle user={{...user, doctorId: user._id || user.id}} socket={socket} />
+        
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              📋 Doctor Dashboard
+            </Typography>
+            <Typography variant="body1">
+              Manage your availability and view appointment requests.
+            </Typography>
+          </CardContent>
+        </Card>
       </Container>
     );
   }
@@ -119,6 +107,11 @@ function Dashboard({ user, socket }) {
         <PatientDoctorSearch onBookAppointment={handleBookAppointment} />
       ) : (
       <Grid container spacing={3}>
+        {/* Doctor Availability Checker */}
+        <Grid item xs={12}>
+          <DoctorAvailabilityChecker />
+        </Grid>
+        
         {/* AI Auto-Marketing */}
         <Grid item xs={12}>
           <AutoMarketing />

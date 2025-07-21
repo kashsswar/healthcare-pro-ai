@@ -38,11 +38,17 @@ function App() {
     if (token && userData) {
       setUser(JSON.parse(userData));
       
-      // Initialize socket connection
-      const newSocket = io('http://localhost:5000');
-      setSocket(newSocket);
-      
-      return () => newSocket.close();
+      // Initialize socket connection with fallback
+      try {
+        const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+          timeout: 5000,
+          transports: ['websocket', 'polling']
+        });
+        setSocket(newSocket);
+        return () => newSocket.close();
+      } catch (error) {
+        console.log('Socket connection failed, continuing without real-time updates');
+      }
     }
   }, []);
 
@@ -51,15 +57,28 @@ function App() {
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     
-    const newSocket = io('http://localhost:5000');
-    setSocket(newSocket);
+    try {
+      const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+        timeout: 5000,
+        transports: ['websocket', 'polling']
+      });
+      setSocket(newSocket);
+    } catch (error) {
+      console.log('Socket connection failed during login');
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
-    if (socket) socket.close();
+    if (socket) {
+      try {
+        socket.close();
+      } catch (error) {
+        console.log('Socket cleanup error:', error);
+      }
+    }
     setSocket(null);
   };
 

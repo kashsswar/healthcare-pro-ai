@@ -28,7 +28,8 @@ function AdminLogin({ onAdminLogin }) {
       credentials.secretKey === SECRET_KEY
     ) {
       const adminUser = {
-        id: 'admin_001',
+        _id: '507f1f77bcf86cd799439011',
+        id: '507f1f77bcf86cd799439011',
         name: 'Super Admin',
         email: 'admin@healthapp.com',
         role: 'admin'

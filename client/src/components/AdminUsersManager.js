@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Card, CardContent, Typography, Table, TableBody, TableCell, 
   TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent,
-  DialogActions, Chip, Box, Tabs, Tab
+  DialogActions, Chip, Box, Tabs, Tab, Alert
 } from '@mui/material';
 import { Delete, Person, LocalHospital } from '@mui/icons-material';
 import axios from 'axios';
@@ -94,10 +94,16 @@ function AdminUsersManager() {
                       <Button
                         startIcon={<Delete />}
                         color="error"
+                        variant="contained"
                         size="small"
                         onClick={() => openDeleteDialog(doctor, 'doctor')}
+                        sx={{ 
+                          bgcolor: 'error.main',
+                          '&:hover': { bgcolor: 'error.dark' },
+                          fontWeight: 'bold'
+                        }}
                       >
-                        Delete
+                        🗑️ DELETE
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -142,10 +148,16 @@ function AdminUsersManager() {
                       <Button
                         startIcon={<Delete />}
                         color="error"
+                        variant="contained"
                         size="small"
                         onClick={() => openDeleteDialog(patient, 'patient')}
+                        sx={{ 
+                          bgcolor: 'error.main',
+                          '&:hover': { bgcolor: 'error.dark' },
+                          fontWeight: 'bold'
+                        }}
                       >
-                        Delete
+                        🗑️ DELETE
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -160,19 +172,47 @@ function AdminUsersManager() {
       <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, user: null, type: '' })}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete {deleteDialog.type} "{deleteDialog.user?.name || deleteDialog.user?.userId?.name}"?
+          <Alert severity="error" sx={{ mb: 2 }}>
+            ⚠️ <strong>PERMANENT DELETION WARNING</strong>
+          </Alert>
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            Delete {deleteDialog.type}: "{deleteDialog.user?.name || deleteDialog.user?.userId?.name}"?
           </Typography>
-          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-            This action cannot be undone and will delete all related appointments.
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            This will <strong>PERMANENTLY DELETE</strong>:
+          </Typography>
+          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+            <li>User profile and personal information</li>
+            <li>All appointment history and medical records</li>
+            <li>Payment history and transactions</li>
+            <li>Reviews and ratings</li>
+            {deleteDialog.type === 'doctor' && <li>Doctor specialization and availability data</li>}
+          </Box>
+          <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+            ❌ This action CANNOT be undone. The data will be lost forever.
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, user: null, type: '' })}>
-            Cancel
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, user: null, type: '' })}
+            variant="outlined"
+            size="large"
+          >
+            ❌ Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
-            Delete
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size="large"
+            sx={{ 
+              bgcolor: 'error.main',
+              '&:hover': { bgcolor: 'error.dark' },
+              fontWeight: 'bold',
+              fontSize: '1.1rem'
+            }}
+          >
+            🗑️ PERMANENTLY DELETE
           </Button>
         </DialogActions>
       </Dialog>
