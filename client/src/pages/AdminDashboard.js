@@ -156,7 +156,7 @@ function AdminDashboard() {
       
       {tabValue === 1 && (
         <Box>
-          <Alert severity="warning" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
             ⚠️ <strong>DANGER ZONE:</strong> Deleting users will permanently remove all their data including appointments, medical history, and cannot be undone.
           </Alert>
           <AdminUsersManager />

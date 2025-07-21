@@ -11,6 +11,7 @@ import AutoMarketing from '../components/AutoMarketing';
 import DoctorAvailabilityToggle from '../components/DoctorAvailabilityToggle';
 import DoctorAvailabilityChecker from '../components/DoctorAvailabilityChecker';
 import DoctorAppointmentQueue from '../components/DoctorAppointmentQueue';
+import DoctorLocationManager from '../components/DoctorLocationManager';
 
 
 function Dashboard({ user, socket }) {
@@ -79,6 +80,9 @@ function Dashboard({ user, socket }) {
         
         {/* Doctor Appointment Queue */}
         <DoctorAppointmentQueue user={{...user, doctorId: user._id || user.id}} socket={socket} />
+        
+        {/* Doctor Location Manager */}
+        <DoctorLocationManager user={{...user, doctorId: user._id || user.id}} />
         
         <Card>
           <CardContent>
