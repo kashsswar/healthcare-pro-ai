@@ -105,6 +105,28 @@ function BookAppointment({ user }) {
         });
       }
       
+      // Save to localStorage for doctor to see
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const newAppointment = {
+        _id: Date.now().toString(),
+        patient: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          profile: user.profile || {}
+        },
+        doctor: appointmentData.doctorId,
+        doctorId: appointmentData.doctorId,
+        scheduledTime: `${appointmentData.appointmentDate}T${appointmentData.appointmentTime}`,
+        symptoms: appointmentData.symptoms.split(',').map(s => s.trim()),
+        status: 'scheduled',
+        createdAt: new Date()
+      };
+      
+      bookedAppointments.push(newAppointment);
+      localStorage.setItem('bookedAppointments', JSON.stringify(bookedAppointments));
+      console.log('Saved appointment to localStorage:', newAppointment);
+      
       alert('Appointment booked successfully!');
       navigate('/dashboard');
     } catch (error) {

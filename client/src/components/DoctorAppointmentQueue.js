@@ -28,16 +28,33 @@ function DoctorAppointmentQueue({ user, socket }) {
       let appointments = [];
       const doctorId = user.doctorId || user._id || user.id;
       
-      // Get all appointments and filter by doctor
-      const allResponse = await axios.get('/api/appointments');
-      appointments = allResponse.data.filter(apt => {
-        console.log('Checking appointment:', apt);
-        return apt.doctor === doctorId || 
-               apt.doctor?._id === doctorId ||
-               apt.doctorId === doctorId;
-      });
+      // Check localStorage for booked appointments first
+      const localAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const doctorLocalAppointments = localAppointments.filter(apt => 
+        apt.doctorId === doctorId || apt.doctor === doctorId
+      );
       
-      console.log('Filtered appointments for doctor:', doctorId, appointments);
+      console.log('Local appointments for doctor:', doctorId, doctorLocalAppointments);
+      
+      if (doctorLocalAppointments.length > 0) {
+        appointments = doctorLocalAppointments;
+      } else {
+        // Fallback to API
+        try {
+          const allResponse = await axios.get('/api/appointments');
+          appointments = allResponse.data.filter(apt => {
+            console.log('Checking appointment:', apt);
+            return apt.doctor === doctorId || 
+                   apt.doctor?._id === doctorId ||
+                   apt.doctorId === doctorId;
+          });
+        } catch (apiError) {
+          console.log('API failed, using empty appointments');
+          appointments = [];
+        }
+      }
+      
+      console.log('Final appointments for doctor:', doctorId, appointments);
       
       // Filter for today's scheduled appointments
       const todayAppointments = appointments.filter(apt => {
@@ -51,24 +68,7 @@ function DoctorAppointmentQueue({ user, socket }) {
       
     } catch (error) {
       console.error('Failed to load appointments:', error);
-      // Show sample appointment for testing
-      setAppointments([{
-        _id: 'sample_1',
-        patient: {
-          name: 'John Smith',
-          email: 'john@email.com',
-          phone: '+91-9876543210',
-          profile: {
-            age: 28,
-            gender: 'Male',
-            medicalHistory: ['Diabetes'],
-            allergies: ['Penicillin']
-          }
-        },
-        scheduledTime: new Date(),
-        symptoms: ['fever', 'headache'],
-        status: 'scheduled'
-      }]);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
@@ -76,16 +76,19 @@ function DoctorAppointmentQueue({ user, socket }) {
 
   const confirmAppointment = async (appointmentId) => {
     try {
-      await axios.patch(`/api/appointments/${appointmentId}/confirm`);
-      
-      // Update local state
+      // Simple status update without API dependency
       setAppointments(prev => prev.map(apt => 
         apt._id === appointmentId 
           ? { ...apt, status: 'confirmed' }
           : apt
       ));
       
-      // Notify patient via socket
+      // Save to localStorage
+      const confirmedAppointments = JSON.parse(localStorage.getItem('confirmedAppointments') || '[]');
+      confirmedAppointments.push(appointmentId);
+      localStorage.setItem('confirmedAppointments', JSON.stringify(confirmedAppointments));
+      
+      // Notify patient via socket if available
       if (socket) {
         socket.emit('appointment-confirmed', {
           appointmentId,
