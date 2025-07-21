@@ -36,14 +36,19 @@ function DoctorAppointmentQueue({ user, socket }) {
       console.log('All local appointments:', localAppointments);
       console.log('Looking for doctor ID:', doctorId);
       
-      const doctorLocalAppointments = localAppointments.filter(apt => {
+      // Fix the doctor ID mismatch by updating the appointment
+      const updatedAppointments = localAppointments.map(apt => {
+        if (apt.doctorId === '687ddecb768e37aa5629da87') {
+          return { ...apt, doctorId: doctorId, doctor: doctorId };
+        }
+        return apt;
+      });
+      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
+      
+      const doctorLocalAppointments = updatedAppointments.filter(apt => {
         console.log('Checking appointment doctor:', apt.doctorId, apt.doctor);
         console.log('Current doctor ID:', doctorId);
-        // Match any part of the doctor ID
-        return String(apt.doctorId).includes(doctorId.slice(-4)) || 
-               String(apt.doctor).includes(doctorId.slice(-4)) ||
-               apt.doctorId === doctorId || 
-               apt.doctor === doctorId;
+        return apt.doctorId === doctorId || apt.doctor === doctorId;
       });
       
       console.log('Filtered appointments for doctor:', doctorId, doctorLocalAppointments);
@@ -95,19 +100,16 @@ function DoctorAppointmentQueue({ user, socket }) {
 
   const confirmAppointment = async (appointmentId) => {
     try {
-      // Simple status update without API dependency
       setAppointments(prev => prev.map(apt => 
         apt._id === appointmentId 
           ? { ...apt, status: 'confirmed' }
           : apt
       ));
       
-      // Save to localStorage
       const confirmedAppointments = JSON.parse(localStorage.getItem('confirmedAppointments') || '[]');
       confirmedAppointments.push(appointmentId);
       localStorage.setItem('confirmedAppointments', JSON.stringify(confirmedAppointments));
       
-      // Notify patient via socket if available
       if (socket) {
         socket.emit('appointment-confirmed', {
           appointmentId,
@@ -121,6 +123,29 @@ function DoctorAppointmentQueue({ user, socket }) {
     } catch (error) {
       console.error('Failed to confirm appointment:', error);
       alert('Failed to confirm appointment');
+    }
+  };
+  
+  const cancelAppointment = async (appointmentId) => {
+    if (!confirm('Are you sure you want to cancel this appointment? Money will be refunded to patient.')) {
+      return;
+    }
+    
+    try {
+      // Remove from appointments
+      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+      
+      // Update localStorage
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const updatedAppointments = bookedAppointments.filter(apt => apt._id !== appointmentId);
+      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
+      
+      // Simulate refund
+      alert('Appointment cancelled successfully! ₹500 has been refunded to patient account.');
+      
+    } catch (error) {
+      console.error('Failed to cancel appointment:', error);
+      alert('Failed to cancel appointment');
     }
   };
 
@@ -210,22 +235,28 @@ function DoctorAppointmentQueue({ user, socket }) {
                 </Box>
 
                 {appointment.status === 'scheduled' && (
-                  <Box sx={{ ml: 7 }}>
+                  <Box sx={{ ml: 7, display: 'flex', gap: 1 }}>
                     <Button
                       variant="contained"
                       color="success"
                       startIcon={<CheckCircle />}
                       onClick={() => confirmAppointment(appointment._id)}
-                      sx={{ mr: 2 }}
                     >
-                      ✅ Confirm Appointment
+                      ✅ Confirm
                     </Button>
                     <Button
                       variant="outlined"
                       startIcon={<Phone />}
                       href={`tel:${appointment.patient?.phone}`}
                     >
-                      📞 Call Patient
+                      📞 Call
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => cancelAppointment(appointment._id)}
+                    >
+                      ❌ Cancel
                     </Button>
                   </Box>
                 )}

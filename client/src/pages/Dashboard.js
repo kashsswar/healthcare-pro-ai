@@ -84,16 +84,43 @@ function Dashboard({ user, socket }) {
         {/* Doctor Location Manager */}
         <DoctorLocationManager user={{...user, doctorId: user._id || user.id}} />
         
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              📋 Doctor Dashboard
-            </Typography>
-            <Typography variant="body1">
-              Manage your availability and view appointment requests.
-            </Typography>
-          </CardContent>
-        </Card>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📋 Today's Summary
+                </Typography>
+                <Typography variant="h4" color="primary">3</Typography>
+                <Typography variant="body2">Scheduled Appointments</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  💰 Today's Earnings
+                </Typography>
+                <Typography variant="h4" color="success.main">₹1,500</Typography>
+                <Typography variant="body2">From 3 consultations</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  ⭐ Your Rating
+                </Typography>
+                <Typography variant="h4" color="warning.main">4.8</Typography>
+                <Typography variant="body2">Based on patient reviews</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Container>
     );
   }
@@ -197,51 +224,7 @@ function Dashboard({ user, socket }) {
           </Card>
         </Grid>
 
-        {/* AI Health Recommendations */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
-                  AI Health Recommendations
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={loadDashboardData}
-                >
-                  Refresh
-                </Button>
-              </Box>
-              {healthRecommendations.length === 0 ? (
-                <Box>
-                  <Typography color="textSecondary" sx={{ mb: 2 }}>
-                    No recommendations available. Here are some general health tips:
-                  </Typography>
-                  <List>
-                    <ListItem>
-                      <ListItemText primary="Drink plenty of water throughout the day" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Exercise for at least 30 minutes, 5 days a week" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Get 7-8 hours of quality sleep each night" />
-                    </ListItem>
-                  </List>
-                </Box>
-              ) : (
-                <List>
-                  {healthRecommendations.slice(0, 5).map((recommendation, index) => (
-                    <ListItem key={index}>
-                      <ListItemText primary={recommendation} />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+
 
         {/* Recent Activity */}
         <Grid item xs={12}>
