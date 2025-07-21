@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { appointmentAPI, aiAPI } from '../services/api';
-import { useLanguage } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 import PatientDoctorSearch from '../components/PatientDoctorSearch';
 import AutoMarketing from '../components/AutoMarketing';
 

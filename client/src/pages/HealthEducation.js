@@ -4,7 +4,7 @@ import {
   Accordion, AccordionSummary, AccordionDetails, Button
 } from '@mui/material';
 import { ExpandMore, Warning, Info } from '@mui/icons-material';
-import { useLanguage } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 function HealthEducation() {
