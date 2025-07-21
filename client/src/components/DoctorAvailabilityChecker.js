@@ -29,51 +29,94 @@ function DoctorAvailabilityChecker() {
 
     setSearching(true);
     
-    // Simulate API call - replace with real API
-    setTimeout(() => {
-      const mockDoctors = [
-        {
-          id: 1,
-          name: 'Dr. Sarah Johnson',
-          specialization: searchParams.specialization,
-          rating: 4.8,
-          consultationFee: 500,
-          availableTime: searchParams.time,
-          isAvailable: true,
-          nextSlot: searchParams.time
-        },
-        {
-          id: 2,
-          name: 'Dr. Michael Chen',
-          specialization: searchParams.specialization,
-          rating: 4.6,
-          consultationFee: 600,
-          availableTime: searchParams.time,
-          isAvailable: true,
-          nextSlot: searchParams.time
-        },
-        {
-          id: 3,
-          name: 'Dr. Priya Sharma',
-          specialization: searchParams.specialization,
-          rating: 4.9,
-          consultationFee: 450,
-          availableTime: searchParams.time,
-          isAvailable: true,
-          nextSlot: searchParams.time
+    // Get real doctors from API or create sample data
+    setTimeout(async () => {
+      let allDoctors = [];
+      
+      try {
+        // Try to get real doctors from API
+        const response = await fetch('/api/doctors');
+        if (response.ok) {
+          allDoctors = await response.json();
         }
-      ];
+      } catch (error) {
+        console.log('Using sample doctors');
+      }
+      
+      // If no real doctors, use sample data
+      if (allDoctors.length === 0) {
+        allDoctors = [
+          {
+            _id: '507f1f77bcf86cd799439011',
+            userId: { name: 'Dr. Sarah Johnson' },
+            specialization: 'General Medicine',
+            rating: 4.8,
+            consultationFee: 500
+          },
+          {
+            _id: '507f1f77bcf86cd799439012', 
+            userId: { name: 'Dr. Michael Chen' },
+            specialization: 'Cardiology',
+            rating: 4.6,
+            consultationFee: 600
+          },
+          {
+            _id: '507f1f77bcf86cd799439013',
+            userId: { name: 'Dr. Priya Sharma' },
+            specialization: 'Dermatology', 
+            rating: 4.9,
+            consultationFee: 450
+          }
+        ];
+      }
+      
+      // Filter by specialization first
+      const specializationFiltered = allDoctors.filter(doctor => 
+        doctor.specialization === searchParams.specialization
+      );
 
-      // Filter based on time (simulate doctor availability)
+      // Check time availability
       const timeHour = parseInt(searchParams.time.split(':')[0]);
-      const filtered = mockDoctors.filter(doctor => {
-        // Simulate different doctors available at different times
-        const doctorStartHour = 9 + (doctor.id - 1) * 2; // 9, 11, 13
-        const doctorEndHour = doctorStartHour + 8; // 17, 19, 21
-        return timeHour >= doctorStartHour && timeHour < doctorEndHour;
+      const timeMinutes = parseInt(searchParams.time.split(':')[1]);
+      const searchTimeInMinutes = timeHour * 60 + timeMinutes;
+      
+      const filtered = specializationFiltered.filter(doctor => {
+        // Check if doctor is available (from availability toggle)
+        const doctorAvailabilityStatus = localStorage.getItem(`doctor_${doctor._id}_availability`);
+        if (doctorAvailabilityStatus) {
+          const status = JSON.parse(doctorAvailabilityStatus);
+          if (!status.isAvailable) return false;
+        }
+        
+        // Check time slots
+        const doctorTimeSlots = localStorage.getItem(`doctor_${doctor._id}_timeslots`);
+        if (doctorTimeSlots) {
+          const timeSlots = JSON.parse(doctorTimeSlots);
+          const startTime = timeSlots.startTime.split(':');
+          const endTime = timeSlots.endTime.split(':');
+          const startInMinutes = parseInt(startTime[0]) * 60 + parseInt(startTime[1]);
+          const endInMinutes = parseInt(endTime[0]) * 60 + parseInt(endTime[1]);
+          
+          return searchTimeInMinutes >= startInMinutes && searchTimeInMinutes < endInMinutes;
+        }
+        
+        // Default availability 9 AM to 5 PM
+        return searchTimeInMinutes >= 540 && searchTimeInMinutes < 1020; // 9*60 to 17*60
       });
+      
+      // Format filtered doctors for display
+      const formattedDoctors = filtered.map(doctor => ({
+        id: doctor._id,
+        name: doctor.userId?.name || 'Unknown Doctor',
+        specialization: doctor.specialization,
+        rating: doctor.rating || 4.5,
+        consultationFee: doctor.consultationFee || 500,
+        availableTime: searchParams.time,
+        isAvailable: true,
+        nextSlot: searchParams.time
+      }));
 
-      setAvailableDoctors(filtered);
+      setAvailableDoctors(formattedDoctors);
       setSearching(false);
     }, 1000);
   };

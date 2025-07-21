@@ -45,7 +45,18 @@ function DoctorAvailabilityToggle({ user, socket }) {
         setTimeSlots(JSON.parse(savedTimeSlots));
       }
       
-      setWaitingPatients(Math.floor(Math.random() * 5));
+      // Load real appointments count
+      try {
+        const response = await axios.get(`/api/appointments/doctor/${user.doctorId}`);
+        const appointments = response.data;
+        const waitingCount = appointments.filter(apt => 
+          apt.status === 'scheduled' && 
+          new Date(apt.scheduledTime).toDateString() === new Date().toDateString()
+        ).length;
+        setWaitingPatients(waitingCount);
+      } catch (error) {
+        setWaitingPatients(0);
+      }
     } catch (error) {
       console.error('Failed to load availability status:', error);
     }
