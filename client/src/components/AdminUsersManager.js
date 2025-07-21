@@ -30,71 +30,16 @@ function AdminUsersManager() {
         totalUsers: response.data.totalUsers || 0
       };
       
-      // Add fallback sample data if no real data
-      if (userData.doctors.length === 0) {
-        userData.doctors = [
-          {
-            _id: '507f1f77bcf86cd799439011',
-            userId: { name: 'Dr. Sarah Johnson', email: 'sarah@hospital.com' },
-            specialization: 'Cardiology',
-            experience: 8,
-            rating: 4.8,
-            consultationFee: 500
-          },
-          {
-            _id: '507f1f77bcf86cd799439012', 
-            userId: { name: 'Dr. Michael Chen', email: 'michael@clinic.com' },
-            specialization: 'General Medicine',
-            experience: 12,
-            rating: 4.6,
-            consultationFee: 400
-          }
-        ];
-      }
-      
-      if (userData.patients.length === 0) {
-        userData.patients = [
-          {
-            _id: '507f1f77bcf86cd799439013',
-            name: 'John Smith',
-            email: 'john@email.com',
-            phone: '+91-9876543210',
-            createdAt: new Date()
-          },
-          {
-            _id: '507f1f77bcf86cd799439014',
-            name: 'Mary Johnson', 
-            email: 'mary@email.com',
-            phone: '+91-9876543211',
-            createdAt: new Date()
-          }
-        ];
-      }
+      // No fallback data - show only real users
       
       setUsers(userData);
     } catch (error) {
       console.error('Error loading users:', error);
-      // Fallback data on error
+      // Show empty data on error
       setUsers({
-        patients: [
-          {
-            _id: '507f1f77bcf86cd799439013',
-            name: 'John Smith',
-            email: 'john@email.com', 
-            phone: '+91-9876543210',
-            createdAt: new Date()
-          }
-        ],
-        doctors: [
-          {
-            _id: '507f1f77bcf86cd799439011',
-            userId: { name: 'Dr. Sarah Johnson', email: 'sarah@hospital.com' },
-            specialization: 'Cardiology',
-            experience: 8,
-            rating: 4.8
-          }
-        ],
-        totalUsers: 2
+        patients: [],
+        doctors: [],
+        totalUsers: 0
       });
     }
   };

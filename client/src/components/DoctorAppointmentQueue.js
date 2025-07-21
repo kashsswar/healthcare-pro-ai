@@ -28,13 +28,23 @@ function DoctorAppointmentQueue({ user, socket }) {
       let appointments = [];
       const doctorId = user.doctorId || user._id || user.id;
       
+      console.log('Doctor user object:', user);
+      console.log('Using doctor ID:', doctorId);
+      
       // Check localStorage for booked appointments first
       const localAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const doctorLocalAppointments = localAppointments.filter(apt => 
-        apt.doctorId === doctorId || apt.doctor === doctorId
-      );
+      console.log('All local appointments:', localAppointments);
+      console.log('Looking for doctor ID:', doctorId);
       
-      console.log('Local appointments for doctor:', doctorId, doctorLocalAppointments);
+      const doctorLocalAppointments = localAppointments.filter(apt => {
+        console.log('Checking appointment doctor:', apt.doctorId, apt.doctor);
+        return apt.doctorId === doctorId || 
+               apt.doctor === doctorId ||
+               apt.doctorId === user.doctorId ||
+               apt.doctor === user.doctorId;
+      });
+      
+      console.log('Filtered appointments for doctor:', doctorId, doctorLocalAppointments);
       
       if (doctorLocalAppointments.length > 0) {
         appointments = doctorLocalAppointments;
