@@ -12,7 +12,6 @@ import ProfessionalAdminPanel from '../components/ProfessionalAdminPanel';
 import AdminMarketingHub from '../components/AdminMarketingHub';
 import AdminDoctorsList from '../components/AdminDoctorsList';
 import AdminUsersManager from '../components/AdminUsersManager';
-import AIMarketingDashboard from '../components/AIMarketingDashboard';
 import SecurityThreatsMonitor from '../components/SecurityThreatsMonitor';
 
 function AdminDashboard() {
