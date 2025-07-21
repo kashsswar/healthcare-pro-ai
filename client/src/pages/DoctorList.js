@@ -6,7 +6,7 @@ import {
 import { Search, LocationOn } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../services/api';
-import { useLanguage } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 import ShareDoctor from '../components/ShareDoctor';
 import DoctorCategories from '../components/DoctorCategories';
 

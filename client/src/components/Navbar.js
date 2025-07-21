@@ -2,11 +2,11 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Select, MenuItem, FormControl } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { LocalHospital } from '@mui/icons-material';
-import { useLanguage } from '../utils/languageContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
-  const { language, changeLanguage, t } = useLanguage();
+  const { currentLanguage, changeLanguage, t } = useLanguage();
   
   const languages = [
     { code: 'en', name: '🇬🇧 English' },
@@ -27,7 +27,7 @@ function Navbar({ user, onLogout }) {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ mr: 2 }}>
             <Select
-              value={language}
+              value={currentLanguage}
               onChange={(e) => changeLanguage(e.target.value)}
               sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' } }}
             >
