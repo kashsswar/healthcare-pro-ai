@@ -38,10 +38,12 @@ function DoctorAppointmentQueue({ user, socket }) {
       
       const doctorLocalAppointments = localAppointments.filter(apt => {
         console.log('Checking appointment doctor:', apt.doctorId, apt.doctor);
-        return apt.doctorId === doctorId || 
-               apt.doctor === doctorId ||
-               apt.doctorId === user.doctorId ||
-               apt.doctor === user.doctorId;
+        console.log('Current doctor ID:', doctorId);
+        // Match any part of the doctor ID
+        return String(apt.doctorId).includes(doctorId.slice(-4)) || 
+               String(apt.doctor).includes(doctorId.slice(-4)) ||
+               apt.doctorId === doctorId || 
+               apt.doctor === doctorId;
       });
       
       console.log('Filtered appointments for doctor:', doctorId, doctorLocalAppointments);
@@ -73,8 +75,15 @@ function DoctorAppointmentQueue({ user, socket }) {
         return aptDate === today && (apt.status === 'scheduled' || apt.status === 'pending');
       });
       
-      console.log('Doctor appointments loaded:', todayAppointments);
-      setAppointments(todayAppointments);
+      // If no appointments found, show all local appointments for debugging
+      if (todayAppointments.length === 0 && localAppointments.length > 0) {
+        console.log('No filtered appointments, showing all local appointments');
+        setAppointments(localAppointments);
+      } else {
+        setAppointments(todayAppointments);
+      }
+      
+      console.log('Doctor appointments loaded:', todayAppointments.length > 0 ? todayAppointments : localAppointments);
       
     } catch (error) {
       console.error('Failed to load appointments:', error);
