@@ -51,20 +51,32 @@ function AdminDoctorBoost() {
 
   const handleBoost = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/boost-doctor`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/boost-doctor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           doctorId: selectedDoctor._id,
+          adminId: '507f1f77bcf86cd799439011',
           boostType,
+          customRating: boostType === 'rating' ? parseFloat(boostValue) : null,
           boostValue: parseFloat(boostValue)
         })
       });
       
-      alert('Doctor boosted successfully!');
-      setBoostDialog(false);
-      loadDoctors();
+      const result = await response.json();
+      
+      if (result.success) {
+        const message = boostType === 'rating' 
+          ? `Doctor rating set to ${boostValue}/5.0` 
+          : 'Doctor boosted successfully!';
+        alert(message);
+        setBoostDialog(false);
+        loadDoctors();
+      } else {
+        alert('Failed to boost doctor: ' + result.message);
+      }
     } catch (error) {
+      console.error('Boost error:', error);
       alert('Failed to boost doctor');
     }
   };
@@ -215,15 +227,30 @@ function AdminDoctorBoost() {
             </FormControl>
 
             {boostType === 'rating' && (
-              <TextField
-                fullWidth
-                label="Rating Boost (0.1 to 1.0)"
-                type="number"
-                value={boostValue}
-                onChange={(e) => setBoostValue(e.target.value)}
-                inputProps={{ min: 0.1, max: 1.0, step: 0.1 }}
-                helperText="Increase doctor's rating artificially"
-              />
+              <Box>
+                <TextField
+                  fullWidth
+                  label="Set Exact Rating (1.0 to 5.0)"
+                  type="number"
+                  value={boostValue}
+                  onChange={(e) => setBoostValue(e.target.value)}
+                  inputProps={{ min: 1.0, max: 5.0, step: 0.1 }}
+                  helperText="Set doctor's exact rating (overrides current rating)"
+                  sx={{ mb: 2 }}
+                />
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[5.0, 4.8, 4.5, 4.0, 3.5].map(rating => (
+                    <Button
+                      key={rating}
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setBoostValue(rating)}
+                    >
+                      {rating} ⭐
+                    </Button>
+                  ))}
+                </Box>
+              </Box>
             )}
 
             <Box sx={{ bgcolor: 'info.light', p: 2, borderRadius: 1 }}>

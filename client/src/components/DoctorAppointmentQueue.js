@@ -28,17 +28,16 @@ function DoctorAppointmentQueue({ user, socket }) {
       let appointments = [];
       const doctorId = user.doctorId || user._id || user.id;
       
-      try {
-        const response = await axios.get(`/api/appointments/doctor/${doctorId}`);
-        appointments = response.data;
-      } catch (apiError) {
-        console.log('API failed, checking all appointments');
-        // Fallback: get all appointments and filter
-        const allResponse = await axios.get('/api/appointments');
-        appointments = allResponse.data.filter(apt => 
-          apt.doctor === doctorId || apt.doctor?._id === doctorId
-        );
-      }
+      // Get all appointments and filter by doctor
+      const allResponse = await axios.get('/api/appointments');
+      appointments = allResponse.data.filter(apt => {
+        console.log('Checking appointment:', apt);
+        return apt.doctor === doctorId || 
+               apt.doctor?._id === doctorId ||
+               apt.doctorId === doctorId;
+      });
+      
+      console.log('Filtered appointments for doctor:', doctorId, appointments);
       
       // Filter for today's scheduled appointments
       const todayAppointments = appointments.filter(apt => {

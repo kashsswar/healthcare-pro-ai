@@ -8,21 +8,25 @@ const router = express.Router();
 // Admin boost doctor rating (veto power)
 router.post('/boost-doctor', async (req, res) => {
   try {
-    const { doctorId, boostType, boostValue, reason, adminId } = req.body;
+    const { doctorId, boostType, boostValue, customRating, reason, adminId } = req.body;
     
-    // Skip admin verification for now - allow all admin actions
-    // const admin = await Admin.findOne({ userId: adminId, isActive: true });
-
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
-      return res.status(404).json({ message: 'Doctor not found' });
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
 
     // Apply boost based on type
     switch (boostType) {
       case 'rating':
-        doctor.adminBoostRating = boostValue;
-        doctor.finalRating = Math.min(5, doctor.rating + doctor.adminBoostRating);
+        if (customRating && customRating >= 1.0 && customRating <= 5.0) {
+          // Set exact rating
+          doctor.adminBoostRating = customRating - (doctor.rating || 0);
+          doctor.finalRating = customRating;
+        } else {
+          // Default boost
+          doctor.adminBoostRating = (doctor.adminBoostRating || 0) + (boostValue || 0.5);
+          doctor.finalRating = Math.min(5, (doctor.rating || 0) + doctor.adminBoostRating);
+        }
         break;
       case 'visibility':
         doctor.visibilityBoost = boostValue;
@@ -34,12 +38,17 @@ router.post('/boost-doctor', async (req, res) => {
 
     await doctor.save();
 
-    // Log the boost (simplified)
-    console.log(`Admin boosted doctor ${doctorId}: ${boostType} by ${boostValue}`);
+    console.log(`Admin boosted doctor ${doctorId}: ${boostType} - Rating: ${doctor.finalRating}`);
 
-    res.json({ message: 'Doctor boosted successfully', doctor });
+    res.json({ 
+      success: true,
+      message: customRating ? `Rating set to ${customRating}` : 'Doctor boosted successfully', 
+      doctor,
+      newRating: doctor.finalRating
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Boost error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
