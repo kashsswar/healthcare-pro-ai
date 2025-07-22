@@ -125,6 +125,12 @@ function PatientProfile({ user, onUpdate }) {
                 value={tempProfile.dateOfBirth || ''}
                 onChange={(e) => handleTempDOBChange(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                inputProps={{ style: { cursor: 'pointer' } }}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'pointer' },
+                  '& .MuiInputBase-input': { cursor: 'pointer' },
+                  '& input': { cursor: 'pointer !important' }
+                }}
               />
             </Grid>
             
@@ -135,20 +141,47 @@ function PatientProfile({ user, onUpdate }) {
                 value={tempProfile.age || ''}
                 InputProps={{ readOnly: true }}
                 helperText="Auto-calculated from date of birth"
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'not-allowed' },
+                  '& .MuiInputBase-input': { cursor: 'not-allowed' },
+                  '& input': { cursor: 'not-allowed !important' }
+                }}
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth sx={{ 
+                '& .MuiInputBase-root': { cursor: 'pointer' },
+                '& .MuiSelect-select': { cursor: 'pointer' },
+                '& .MuiInputBase-input': { cursor: 'pointer' }
+              }}>
                 <InputLabel>Gender</InputLabel>
                 <Select
                   value={tempProfile.gender || ''}
                   onChange={(e) => setTempProfile(prev => ({ ...prev, gender: e.target.value }))}
                   label="Gender"
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 200,
+                        overflow: 'auto'
+                      }
+                    }
+                  }}
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>
                   <MenuItem value="Other">Other</MenuItem>
+                  <MenuItem disabled sx={{ justifyContent: 'center', bgcolor: 'primary.main', color: 'white' }}>
+                    <Button 
+                      size="small" 
+                      variant="contained" 
+                      onClick={() => document.activeElement.blur()}
+                      sx={{ minWidth: '60px' }}
+                    >
+                      OK
+                    </Button>
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -159,6 +192,11 @@ function PatientProfile({ user, onUpdate }) {
                 label="Phone Number"
                 value={tempProfile.phone || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, phone: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& input': { cursor: 'text !important' }
+                }}
               />
             </Grid>
 
@@ -170,6 +208,11 @@ function PatientProfile({ user, onUpdate }) {
                 rows={2}
                 value={tempProfile.address || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, address: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& textarea': { cursor: 'text !important' }
+                }}
               />
             </Grid>
           </Grid>

@@ -105,7 +105,7 @@ function App() {
             />
             <Route 
               path="/dashboard" 
-              element={user ? <Dashboard user={user} socket={socket} /> : <Navigate to="/login" />} 
+              element={user ? <Dashboard key={Date.now()} user={user} socket={socket} /> : <Navigate to="/login" />} 
             />
             <Route 
               path="/doctors" 

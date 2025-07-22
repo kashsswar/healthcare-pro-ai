@@ -9,6 +9,7 @@ import { doctorAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import ShareDoctor from '../components/ShareDoctor';
 import DoctorCategories from '../components/DoctorCategories';
+import PatientReview from '../components/PatientReview';
 
 function DoctorList({ user }) {
   const [doctors, setDoctors] = useState([]);
@@ -18,6 +19,7 @@ function DoctorList({ user }) {
   const [loading, setLoading] = useState(false);
   const [shareDoctor, setShareDoctor] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -154,11 +156,9 @@ function DoctorList({ user }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Rating value={doctor.finalRating || doctor.rating} readOnly size="small" />
                   <Typography variant="body2" sx={{ ml: 1 }}>
-                    {(doctor.finalRating || doctor.rating).toFixed(1)} ({doctor.reviewCount} reviews)
+                    {(doctor.finalRating || doctor.rating || 0).toFixed(1)} ({doctor.reviewCount || 0} reviews)
                   </Typography>
-                  {doctor.adminBoostRating > 0 && (
-                    <Chip label="⭐ Boosted" color="warning" size="small" sx={{ ml: 1 }} />
-                  )}
+
                 </Box>
                 
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
@@ -209,14 +209,25 @@ function DoctorList({ user }) {
                 >
                   {t('bookAppointment')}
                 </Button>
-                <Button 
-                  fullWidth 
-                  variant="outlined"
-                  onClick={() => setShareDoctor(doctor)}
-                  size="small"
-                >
-                  📱 Share Doctor
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button 
+                    variant="outlined"
+                    onClick={() => setShareDoctor(doctor)}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  >
+                    📱 Share
+                  </Button>
+                  <Button 
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => setReviewDialog({ open: true, doctor })}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  >
+                    ⭐ Review
+                  </Button>
+                </Box>
               </Box>
             </Card>
           </Grid>
@@ -227,6 +238,26 @@ function DoctorList({ user }) {
         doctor={shareDoctor} 
         open={!!shareDoctor} 
         onClose={() => setShareDoctor(null)} 
+      />
+      
+      <PatientReview
+        open={reviewDialog.open}
+        onClose={() => setReviewDialog({ open: false, doctor: null })}
+        doctor={reviewDialog.doctor}
+        patient={user}
+        onReviewSubmit={(reviewData, newRating) => {
+          // Update the doctor's rating in the current list
+          setDoctors(prev => prev.map(d => 
+            d._id === reviewData.doctorId 
+              ? { ...d, rating: newRating, finalRating: newRating + (d.adminBoostRating || 0) }
+              : d
+          ));
+          setFilteredDoctors(prev => prev.map(d => 
+            d._id === reviewData.doctorId 
+              ? { ...d, rating: newRating, finalRating: newRating + (d.adminBoostRating || 0) }
+              : d
+          ));
+        }}
       />
       
       {filteredDoctors.length === 0 && !loading && (

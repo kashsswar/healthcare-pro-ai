@@ -125,12 +125,20 @@ function DoctorProfile({ user, onUpdate }) {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth sx={{ '& .MuiInputBase-root': { cursor: 'pointer' } }}>
                 <InputLabel>Specialization</InputLabel>
                 <Select
                   value={tempProfile.specialization || ''}
                   onChange={(e) => setTempProfile(prev => ({ ...prev, specialization: e.target.value }))}
                   label="Specialization"
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 200,
+                        overflow: 'auto'
+                      }
+                    }
+                  }}
                 >
                   <MenuItem value="General Medicine">General Medicine</MenuItem>
                   <MenuItem value="Cardiology">Cardiology</MenuItem>
@@ -140,6 +148,16 @@ function DoctorProfile({ user, onUpdate }) {
                   <MenuItem value="Gynecology">Gynecology</MenuItem>
                   <MenuItem value="Neurology">Neurology</MenuItem>
                   <MenuItem value="Dentistry">Dentistry</MenuItem>
+                  <MenuItem disabled sx={{ justifyContent: 'center', bgcolor: 'primary.main', color: 'white' }}>
+                    <Button 
+                      size="small" 
+                      variant="contained" 
+                      onClick={() => document.activeElement.blur()}
+                      sx={{ minWidth: '60px' }}
+                    >
+                      OK
+                    </Button>
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -151,6 +169,11 @@ function DoctorProfile({ user, onUpdate }) {
                 type="number"
                 value={tempProfile.experience || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, experience: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& input': { cursor: 'text !important' }
+                }}
               />
             </Grid>
 
@@ -161,6 +184,11 @@ function DoctorProfile({ user, onUpdate }) {
                 type="number"
                 value={tempProfile.consultationFee || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, consultationFee: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& input': { cursor: 'text !important' }
+                }}
               />
             </Grid>
 
@@ -170,6 +198,11 @@ function DoctorProfile({ user, onUpdate }) {
                 label="Phone Number"
                 value={tempProfile.phone || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, phone: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& input': { cursor: 'text !important' }
+                }}
               />
             </Grid>
 
@@ -185,6 +218,11 @@ function DoctorProfile({ user, onUpdate }) {
                   }
                 }}
                 helperText="Press Enter to add qualification"
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& input': { cursor: 'text !important' }
+                }}
               />
               <Box sx={{ mt: 1 }}>
                 {tempProfile.qualification?.map((qual, index) => (
@@ -206,6 +244,11 @@ function DoctorProfile({ user, onUpdate }) {
                 rows={2}
                 value={tempProfile.address || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, address: e.target.value }))}
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& textarea': { cursor: 'text !important' }
+                }}
               />
             </Grid>
 
@@ -218,6 +261,11 @@ function DoctorProfile({ user, onUpdate }) {
                 value={tempProfile.bio || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell patients about yourself, your expertise, and approach to healthcare..."
+                sx={{ 
+                  '& .MuiInputBase-root': { cursor: 'text' },
+                  '& .MuiInputBase-input': { cursor: 'text' },
+                  '& textarea': { cursor: 'text !important' }
+                }}
               />
             </Grid>
           </Grid>

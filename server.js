@@ -40,6 +40,7 @@ app.use('/api/payment', require('./routes/payment'));
 app.use('/api/admin-users', require('./routes/admin-users'));
 app.use('/api/doctors', require('./routes/doctor-availability'));
 app.use('/api/admin', require('./routes/security'));
+app.use('/api/ai', require('./routes/ai-patient'));
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {

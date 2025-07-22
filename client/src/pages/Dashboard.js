@@ -14,6 +14,8 @@ import DoctorAppointmentQueue from '../components/DoctorAppointmentQueue';
 import DoctorLocationManager from '../components/DoctorLocationManager';
 import PatientProfile from '../components/PatientProfile';
 import DoctorProfile from '../components/DoctorProfile';
+import PatientReview from '../components/PatientReview';
+import DoctorsByLocation from '../components/DoctorsByLocation';
 
 
 function Dashboard({ user, socket }) {
@@ -21,6 +23,7 @@ function Dashboard({ user, socket }) {
   const [healthRecommendations, setHealthRecommendations] = useState([]);
   const [queueUpdates, setQueueUpdates] = useState({});
   const [activeTab, setActiveTab] = useState(0);
+  const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -54,6 +57,8 @@ function Dashboard({ user, socket }) {
 
   useEffect(() => {
     loadDashboardData();
+    // Reset to main dashboard tab when component mounts
+    setActiveTab(0);
     
     // Socket disabled to prevent connection errors
     // if (socket) {
@@ -172,7 +177,7 @@ function Dashboard({ user, socket }) {
                 <Typography variant="h6" gutterBottom>
                   ⭐ Your Rating
                 </Typography>
-                <Typography variant="h4" color="warning.main">{user.finalRating || user.rating || '4.8'}</Typography>
+                <Typography variant="h4" color="warning.main">{(user.finalRating || user.rating || 4.8).toFixed(1)}</Typography>
                 <Typography variant="body2">
                   {user.adminBoostRating > 0 ? 'Admin Boosted Rating' : 'Based on patient reviews'}
                 </Typography>
@@ -198,7 +203,15 @@ function Dashboard({ user, socket }) {
       </Box>
       
       {activeTab === 1 ? (
-        <PatientDoctorSearch onBookAppointment={handleBookAppointment} />
+        <Box>
+          <Typography variant="h5" gutterBottom>
+            🔍 Find Doctors Near You
+          </Typography>
+          <DoctorsByLocation user={user} onBookAppointment={(appointmentData) => {
+            // Refresh dashboard data when appointment is booked
+            loadDashboardData();
+          }} />
+        </Box>
       ) : (
       <Grid container spacing={3}>
         {/* Patient Profile */}
@@ -291,6 +304,17 @@ function Dashboard({ user, socket }) {
                         >
                           Cancel
                         </Button>
+                        {appointment.status === 'completed' && (
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            size="small"
+                            onClick={() => setReviewDialog({ open: true, doctor: appointment.doctor })}
+                            sx={{ fontSize: '0.75rem', ml: 1 }}
+                          >
+                            ⭐ Review
+                          </Button>
+                        )}
                       </Box>
                     </ListItem>
                   ))}
@@ -311,7 +335,7 @@ function Dashboard({ user, socket }) {
                 {appointments.slice(0, 5).map((appointment) => (
                   <ListItem key={appointment._id} divider>
                     <ListItemText
-                      primary={`Consultation with Dr. ${appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor'}`}
+                      primary={`Consultation with ${appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor (name not available)'}`}
                       secondary={new Date(appointment.createdAt || appointment.scheduledTime).toLocaleDateString()}
                     />
                     <Chip 
@@ -319,6 +343,16 @@ function Dashboard({ user, socket }) {
                       color={getStatusColor(appointment.status)}
                       size="small"
                     />
+                    {appointment.status === 'completed' && (
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => setReviewDialog({ open: true, doctor: appointment.doctor })}
+                        sx={{ ml: 1, fontSize: '0.75rem' }}
+                      >
+                        ⭐ Rate Doctor
+                      </Button>
+                    )}
                   </ListItem>
                 ))}
               </List>
@@ -327,6 +361,18 @@ function Dashboard({ user, socket }) {
         </Grid>
       </Grid>
       )}
+      
+      {/* Review Dialog */}
+      <PatientReview
+        open={reviewDialog.open}
+        onClose={() => setReviewDialog({ open: false, doctor: null })}
+        doctor={reviewDialog.doctor}
+        patient={user}
+        onReviewSubmit={(reviewData, newRating) => {
+          console.log('Review submitted:', reviewData);
+          loadDashboardData(); // Refresh data
+        }}
+      />
     </Container>
   );
 }

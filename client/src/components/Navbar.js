@@ -36,7 +36,10 @@ function Navbar({ user, onLogout }) {
               ))}
             </Select>
           </FormControl>
-          <Button color="inherit" onClick={() => navigate('/dashboard')}>
+          <Button color="inherit" onClick={() => {
+            navigate('/dashboard');
+            window.location.href = '/dashboard';
+          }}>
             {t('home')}
           </Button>
           {user.role === 'patient' && (
