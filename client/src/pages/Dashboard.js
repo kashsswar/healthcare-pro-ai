@@ -35,7 +35,16 @@ function Dashboard({ user, socket }) {
       const userAppointments = bookedAppointments.filter(apt => 
         apt.patient?.email === user.email || apt.patientId === user.id
       );
-      setAppointments(userAppointments);
+      
+      // Ensure appointments have proper status
+      const processedAppointments = userAppointments.map(apt => ({
+        ...apt,
+        status: apt.status || 'scheduled',
+        doctorName: apt.doctor?.userId?.name || apt.doctor?.name || apt.doctorName || 'Doctor'
+      }));
+      
+      setAppointments(processedAppointments);
+      console.log('Loaded appointments:', processedAppointments);
       
     } catch (error) {
       console.error('Dashboard load error:', error);
@@ -107,9 +116,11 @@ function Dashboard({ user, socket }) {
     }
   };
 
-  const upcomingAppointments = appointments.filter(apt => 
-    apt.status === 'scheduled' && new Date(apt.scheduledTime) > new Date()
-  );
+  const upcomingAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.scheduledTime || apt.appointmentDate);
+    const now = new Date();
+    return (apt.status === 'scheduled' || apt.status === 'pending') && aptDate > now;
+  });
 
   if (user.role === 'doctor') {
     return (
@@ -247,7 +258,7 @@ function Dashboard({ user, socket }) {
                   {upcomingAppointments.slice(0, 3).map((appointment) => (
                     <ListItem key={appointment._id} divider>
                       <ListItemText
-                        primary={`Dr. ${appointment.doctor?.userId?.name}`}
+                        primary={`Dr. ${appointment.doctor?.userId?.name || appointment.doctor?.name || appointment.doctorName || 'Doctor'}`}
                         secondary={
                           <Box>
                             <Typography variant="body2">
@@ -270,17 +281,16 @@ function Dashboard({ user, socket }) {
                           color={getStatusColor(appointment.status)}
                           size="small"
                         />
-                        {appointment.status === 'scheduled' && (
-                          <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            onClick={() => cancelPatientAppointment(appointment._id)}
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            Cancel
-                          </Button>
-                        )}
+                        <Button
+                          variant="contained"
+                          color="error"
+                          size="small"
+                          onClick={() => cancelPatientAppointment(appointment._id)}
+                          sx={{ fontSize: '0.75rem' }}
+                          disabled={appointment.status !== 'scheduled'}
+                        >
+                          Cancel
+                        </Button>
                       </Box>
                     </ListItem>
                   ))}
@@ -301,8 +311,8 @@ function Dashboard({ user, socket }) {
                 {appointments.slice(0, 5).map((appointment) => (
                   <ListItem key={appointment._id} divider>
                     <ListItemText
-                      primary={`Consultation with Dr. ${appointment.doctor?.userId?.name}`}
-                      secondary={new Date(appointment.createdAt).toLocaleDateString()}
+                      primary={`Consultation with Dr. ${appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor'}`}
+                      secondary={new Date(appointment.createdAt || appointment.scheduledTime).toLocaleDateString()}
                     />
                     <Chip 
                       label={appointment.status} 
