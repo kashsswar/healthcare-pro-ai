@@ -13,6 +13,7 @@ import DoctorAvailabilityChecker from '../components/DoctorAvailabilityChecker';
 import DoctorAppointmentQueue from '../components/DoctorAppointmentQueue';
 import DoctorLocationManager from '../components/DoctorLocationManager';
 import PatientProfile from '../components/PatientProfile';
+import DoctorProfile from '../components/DoctorProfile';
 
 
 function Dashboard({ user, socket }) {
@@ -116,6 +117,9 @@ function Dashboard({ user, socket }) {
         <Typography variant="h4" gutterBottom>
           👨‍⚕️ Dr. {user.name} - {t('home')}
         </Typography>
+        
+        {/* Doctor Profile */}
+        <DoctorProfile user={user} />
         
         {/* Doctor Availability Toggle */}
         <DoctorAvailabilityToggle user={{...user, doctorId: user._id || user.id}} socket={socket} />
