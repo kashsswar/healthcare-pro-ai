@@ -68,7 +68,7 @@ function Dashboard({ user, socket }) {
   };
   
   const cancelPatientAppointment = async (appointmentId) => {
-    if (!confirm('Are you sure you want to cancel this appointment? You will receive a full refund.')) {
+    if (!window.confirm('Are you sure you want to cancel this appointment? You will receive a full refund.')) {
       return;
     }
     

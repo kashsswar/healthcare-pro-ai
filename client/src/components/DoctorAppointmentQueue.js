@@ -127,7 +127,7 @@ function DoctorAppointmentQueue({ user, socket }) {
   };
   
   const cancelAppointment = async (appointmentId) => {
-    if (!confirm('Are you sure you want to cancel this appointment? Money will be refunded to patient.')) {
+    if (!window.confirm('Are you sure you want to cancel this appointment? Money will be refunded to patient.')) {
       return;
     }
     
