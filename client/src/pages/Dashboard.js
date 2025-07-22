@@ -12,6 +12,7 @@ import DoctorAvailabilityToggle from '../components/DoctorAvailabilityToggle';
 import DoctorAvailabilityChecker from '../components/DoctorAvailabilityChecker';
 import DoctorAppointmentQueue from '../components/DoctorAppointmentQueue';
 import DoctorLocationManager from '../components/DoctorLocationManager';
+import PatientProfile from '../components/PatientProfile';
 
 
 function Dashboard({ user, socket }) {
@@ -28,31 +29,33 @@ function Dashboard({ user, socket }) {
 
   const loadDashboardData = React.useCallback(async () => {
     try {
-      // Load appointments
-      const appointmentsRes = await appointmentAPI.getPatientAppointments(user.id);
-      setAppointments(appointmentsRes.data);
+      // Load appointments from localStorage
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const userAppointments = bookedAppointments.filter(apt => 
+        apt.patient?.email === user.email || apt.patientId === user.id
+      );
+      setAppointments(userAppointments);
       
-      // Load AI health recommendations
-      const recommendationsRes = await aiAPI.getHealthRecommendations(user.id);
-      setHealthRecommendations(recommendationsRes.data.recommendations);
     } catch (error) {
       console.error('Dashboard load error:', error);
+      setAppointments([]);
     }
-  }, [user.id]);
+  }, [user.id, user.email]);
 
   useEffect(() => {
     loadDashboardData();
     
-    if (socket) {
-      socket.on('appointment-rescheduled', (data) => {
-        setQueueUpdates(prev => ({ ...prev, [data.appointmentId]: data }));
-      });
-      
-      socket.on('consultation-started', () => {
-        loadDashboardData();
-      });
-    }
-  }, [socket, loadDashboardData]);
+    // Socket disabled to prevent connection errors
+    // if (socket) {
+    //   socket.on('appointment-rescheduled', (data) => {
+    //     setQueueUpdates(prev => ({ ...prev, [data.appointmentId]: data }));
+    //   });
+    //   
+    //   socket.on('consultation-started', () => {
+    //     loadDashboardData();
+    //   });
+    // }
+  }, [loadDashboardData]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -62,6 +65,45 @@ function Dashboard({ user, socket }) {
       'cancelled': 'error'
     };
     return colors[status] || 'default';
+  };
+  
+  const cancelPatientAppointment = async (appointmentId) => {
+    if (!confirm('Are you sure you want to cancel this appointment? You will receive a full refund.')) {
+      return;
+    }
+    
+    try {
+      // Remove from local appointments
+      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+      
+      // Update localStorage
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const cancelledAppointment = bookedAppointments.find(apt => apt._id === appointmentId);
+      const updatedAppointments = bookedAppointments.filter(apt => apt._id !== appointmentId);
+      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
+      
+      // Add to cancelled appointments
+      const cancelledAppointments = JSON.parse(localStorage.getItem('cancelledAppointments') || '[]');
+      if (cancelledAppointment) {
+        cancelledAppointments.push({
+          ...cancelledAppointment,
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          refundAmount: 500
+        });
+        localStorage.setItem('cancelledAppointments', JSON.stringify(cancelledAppointments));
+      }
+      
+      // Simulate refund notification
+      alert('Appointment cancelled successfully! ₹500 has been refunded to your account. It will reflect in 2-3 business days.');
+      
+      // Reload dashboard data
+      loadDashboardData();
+      
+    } catch (error) {
+      console.error('Failed to cancel appointment:', error);
+      alert('Failed to cancel appointment. Please try again.');
+    }
   };
 
   const upcomingAppointments = appointments.filter(apt => 
@@ -115,8 +157,10 @@ function Dashboard({ user, socket }) {
                 <Typography variant="h6" gutterBottom>
                   ⭐ Your Rating
                 </Typography>
-                <Typography variant="h4" color="warning.main">4.8</Typography>
-                <Typography variant="body2">Based on patient reviews</Typography>
+                <Typography variant="h4" color="warning.main">{user.finalRating || user.rating || '4.8'}</Typography>
+                <Typography variant="body2">
+                  {user.adminBoostRating > 0 ? 'Admin Boosted Rating' : 'Based on patient reviews'}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -142,6 +186,11 @@ function Dashboard({ user, socket }) {
         <PatientDoctorSearch onBookAppointment={handleBookAppointment} />
       ) : (
       <Grid container spacing={3}>
+        {/* Patient Profile */}
+        <Grid item xs={12}>
+          <PatientProfile user={user} />
+        </Grid>
+        
         {/* Doctor Availability Checker */}
         <Grid item xs={12}>
           <DoctorAvailabilityChecker />
@@ -211,11 +260,24 @@ function Dashboard({ user, socket }) {
                           </Box>
                         }
                       />
-                      <Chip 
-                        label={appointment.status} 
-                        color={getStatusColor(appointment.status)}
-                        size="small"
-                      />
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end', minWidth: '100px' }}>
+                        <Chip 
+                          label={appointment.status} 
+                          color={getStatusColor(appointment.status)}
+                          size="small"
+                        />
+                        {appointment.status === 'scheduled' && (
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            onClick={() => cancelPatientAppointment(appointment._id)}
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </Box>
                     </ListItem>
                   ))}
                 </List>

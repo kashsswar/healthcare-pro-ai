@@ -152,10 +152,13 @@ function DoctorList({ user }) {
                 />
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Rating value={doctor.rating} readOnly size="small" />
+                  <Rating value={doctor.finalRating || doctor.rating} readOnly size="small" />
                   <Typography variant="body2" sx={{ ml: 1 }}>
-                    ({doctor.reviewCount} reviews)
+                    {(doctor.finalRating || doctor.rating).toFixed(1)} ({doctor.reviewCount} reviews)
                   </Typography>
+                  {doctor.adminBoostRating > 0 && (
+                    <Chip label="⭐ Boosted" color="warning" size="small" sx={{ ml: 1 }} />
+                  )}
                 </Box>
                 
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
