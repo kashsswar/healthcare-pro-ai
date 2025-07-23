@@ -115,12 +115,21 @@ function BookAppointment({ user }) {
           phone: user.phone,
           profile: user.profile || {}
         },
-        doctor: appointmentData.doctorId,
+        patientId: user._id || user.id,
+        doctor: {
+          _id: appointmentData.doctorId,
+          userId: { name: doctor.userId?.name || 'Doctor' },
+          name: doctor.userId?.name || 'Doctor',
+          specialization: doctor.specialization
+        },
         doctorId: appointmentData.doctorId,
+        doctorName: doctor.userId?.name || 'Doctor',
         scheduledTime: `${appointmentData.appointmentDate}T${appointmentData.appointmentTime}`,
+        appointmentDate: appointmentData.appointmentDate,
+        appointmentTime: appointmentData.appointmentTime,
         symptoms: appointmentData.symptoms.split(',').map(s => s.trim()),
         status: 'scheduled',
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       };
       
       bookedAppointments.push(newAppointment);
@@ -160,7 +169,14 @@ function BookAppointment({ user }) {
           type="datetime-local"
           value={formData.preferredDate}
           onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })}
-          sx={{ mb: 2 }}
+          inputProps={{ style: { cursor: 'pointer' } }}
+          sx={{ 
+            mb: 2,
+            cursor: 'pointer',
+            '& .MuiInputBase-root': { cursor: 'pointer' },
+            '& input': { cursor: 'pointer !important' },
+            '& input::-webkit-calendar-picker-indicator': { cursor: 'pointer' }
+          }}
           InputLabelProps={{ shrink: true }}
           helperText={`Dr. ${doctor.userId?.name} is available 9:00 AM - 5:00 PM`}
         />
@@ -173,14 +189,22 @@ function BookAppointment({ user }) {
           value={formData.symptoms}
           onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
           placeholder="e.g., headache, fever, cough"
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 2,
+            cursor: 'pointer',
+            '& .MuiInputBase-root': { cursor: 'text' },
+            '& textarea': { cursor: 'text' }
+          }}
         />
 
         <Button 
           variant="outlined" 
           onClick={analyzeSymptoms}
           disabled={!formData.symptoms.trim() || loading}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 2,
+            cursor: !formData.symptoms.trim() || loading ? 'not-allowed' : 'pointer'
+          }}
         >
           AI Analysis
         </Button>
@@ -209,6 +233,9 @@ function BookAppointment({ user }) {
           fullWidth 
           onClick={handleBooking}
           disabled={!formData.preferredDate || !formData.symptoms.trim() || loading}
+          sx={{
+            cursor: (!formData.preferredDate || !formData.symptoms.trim() || loading) ? 'not-allowed' : 'pointer'
+          }}
         >
           {loading ? 'Booking...' : 'Book Appointment'}
         </Button>

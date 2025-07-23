@@ -53,42 +53,13 @@ function DoctorAppointmentQueue({ user, socket }) {
       
       console.log('Filtered appointments for doctor:', doctorId, doctorLocalAppointments);
       
-      if (doctorLocalAppointments.length > 0) {
-        appointments = doctorLocalAppointments;
-      } else {
-        // Fallback to API
-        try {
-          const allResponse = await axios.get('/api/appointments');
-          appointments = allResponse.data.filter(apt => {
-            console.log('Checking appointment:', apt);
-            return apt.doctor === doctorId || 
-                   apt.doctor?._id === doctorId ||
-                   apt.doctorId === doctorId;
-          });
-        } catch (apiError) {
-          console.log('API failed, using empty appointments');
-          appointments = [];
-        }
-      }
-      
+      // Use only localStorage appointments - no API fallback
+      appointments = doctorLocalAppointments;
       console.log('Final appointments for doctor:', doctorId, appointments);
       
-      // Filter for today's scheduled appointments
-      const todayAppointments = appointments.filter(apt => {
-        const aptDate = new Date(apt.scheduledTime || apt.appointmentDate).toDateString();
-        const today = new Date().toDateString();
-        return aptDate === today && (apt.status === 'scheduled' || apt.status === 'pending');
-      });
-      
-      // If no appointments found, show all local appointments for debugging
-      if (todayAppointments.length === 0 && localAppointments.length > 0) {
-        console.log('No filtered appointments, showing all local appointments');
-        setAppointments(localAppointments);
-      } else {
-        setAppointments(todayAppointments);
-      }
-      
-      console.log('Doctor appointments loaded:', todayAppointments.length > 0 ? todayAppointments : localAppointments);
+      // Show all appointments for this doctor (remove date filtering for debugging)
+      setAppointments(appointments);
+      console.log('Doctor appointments loaded:', appointments);
       
     } catch (error) {
       console.error('Failed to load appointments:', error);

@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, CardContent, Typography, TextField, Button, 
-  Box, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  Box, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { LocalHospital, Save, Edit } from '@mui/icons-material';
+import { Person, Save, Edit } from '@mui/icons-material';
 
 function DoctorProfile({ user, onUpdate }) {
   const [profile, setProfile] = useState({
     specialization: '',
     experience: '',
-    qualification: [],
     consultationFee: '',
-    phone: user.phone || '',
-    address: '',
-    bio: ''
+    qualification: '',
+    flatNo: '',
+    street: '',
+    city: '',
+    state: '',
+    phone: user.phone || ''
   });
   const [editOpen, setEditOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
@@ -35,23 +37,7 @@ function DoctorProfile({ user, onUpdate }) {
     localStorage.setItem(`doctor_${user._id}_profile`, JSON.stringify(tempProfile));
     if (onUpdate) onUpdate(tempProfile);
     setEditOpen(false);
-    alert('Profile updated successfully!');
-  };
-
-  const addQualification = (qual) => {
-    if (qual && !tempProfile.qualification?.includes(qual)) {
-      setTempProfile(prev => ({
-        ...prev,
-        qualification: [...(prev.qualification || []), qual]
-      }));
-    }
-  };
-
-  const removeQualification = (qual) => {
-    setTempProfile(prev => ({
-      ...prev,
-      qualification: prev.qualification?.filter(q => q !== qual) || []
-    }));
+    alert('Doctor profile updated successfully!');
   };
 
   return (
@@ -60,7 +46,7 @@ function DoctorProfile({ user, onUpdate }) {
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <LocalHospital color="primary" sx={{ mr: 1 }} />
+              <Person color="primary" sx={{ mr: 1 }} />
               <Typography variant="h6">👨‍⚕️ Doctor Profile</Typography>
             </Box>
             <Button
@@ -72,50 +58,36 @@ function DoctorProfile({ user, onUpdate }) {
             </Button>
           </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Specialization</Typography>
-              <Typography variant="body1">{profile.specialization || 'Not set'}</Typography>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Experience</Typography>
-              <Typography variant="body1">{profile.experience ? `${profile.experience} years` : 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Consultation Fee</Typography>
-              <Typography variant="body1">{profile.consultationFee ? `₹${profile.consultationFee}` : 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Phone Number</Typography>
-              <Typography variant="body1">{profile.phone || 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">Qualifications</Typography>
-              <Box sx={{ mt: 1 }}>
-                {profile.qualification?.length > 0 ? (
-                  profile.qualification.map((qual, index) => (
-                    <Chip key={index} label={qual} sx={{ mr: 1, mb: 1 }} />
-                  ))
-                ) : (
-                  <Typography variant="body1">Not set</Typography>
-                )}
-              </Box>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">Address</Typography>
-              <Typography variant="body1">{profile.address || 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">Bio</Typography>
-              <Typography variant="body1">{profile.bio || 'Not set'}</Typography>
-            </Grid>
-          </Grid>
+          {profile.specialization || profile.city ? (
+            <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>🏥 Specialization:</strong> {profile.specialization}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>📅 Experience:</strong> {profile.experience} years
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>💰 Consultation Fee:</strong> ₹{profile.consultationFee}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>🎓 Qualification:</strong> {profile.qualification}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>📱 Phone:</strong> {profile.phone}
+              </Typography>
+              {(profile.flatNo || profile.street || profile.city || profile.state) && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>🏠 Clinic Address:</strong> {profile.flatNo} {profile.street}, {profile.city}, {profile.state}
+                </Typography>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="info.contrastText">
+                📝 Please complete your doctor profile by clicking "Edit Profile" above.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -125,20 +97,13 @@ function DoctorProfile({ user, onUpdate }) {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth sx={{ '& .MuiInputBase-root': { cursor: 'pointer' } }}>
+              <FormControl fullWidth sx={{ cursor: 'pointer' }}>
                 <InputLabel>Specialization</InputLabel>
                 <Select
                   value={tempProfile.specialization || ''}
                   onChange={(e) => setTempProfile(prev => ({ ...prev, specialization: e.target.value }))}
                   label="Specialization"
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 200,
-                        overflow: 'auto'
-                      }
-                    }
-                  }}
+                  sx={{ cursor: 'pointer' }}
                 >
                   <MenuItem value="General Medicine">General Medicine</MenuItem>
                   <MenuItem value="Cardiology">Cardiology</MenuItem>
@@ -147,33 +112,21 @@ function DoctorProfile({ user, onUpdate }) {
                   <MenuItem value="Orthopedics">Orthopedics</MenuItem>
                   <MenuItem value="Gynecology">Gynecology</MenuItem>
                   <MenuItem value="Neurology">Neurology</MenuItem>
-                  <MenuItem value="Dentistry">Dentistry</MenuItem>
-                  <MenuItem disabled sx={{ justifyContent: 'center', bgcolor: 'primary.main', color: 'white' }}>
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      onClick={() => document.activeElement.blur()}
-                      sx={{ minWidth: '60px' }}
-                    >
-                      OK
-                    </Button>
-                  </MenuItem>
+                  <MenuItem value="Psychiatry">Psychiatry</MenuItem>
+                  <MenuItem value="Ophthalmology">Ophthalmology</MenuItem>
+                  <MenuItem value="ENT">ENT</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Experience (years)"
+                label="Experience (Years)"
                 type="number"
                 value={tempProfile.experience || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, experience: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& input': { cursor: 'text !important' }
-                }}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
 
@@ -184,11 +137,18 @@ function DoctorProfile({ user, onUpdate }) {
                 type="number"
                 value={tempProfile.consultationFee || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, consultationFee: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& input': { cursor: 'text !important' }
-                }}
+                sx={{ cursor: 'pointer' }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Qualification"
+                value={tempProfile.qualification || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, qualification: e.target.value }))}
+                placeholder="e.g., MBBS, MD"
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
 
@@ -198,74 +158,48 @@ function DoctorProfile({ user, onUpdate }) {
                 label="Phone Number"
                 value={tempProfile.phone || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, phone: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& input': { cursor: 'text !important' }
-                }}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Add Qualification"
-                placeholder="e.g., MBBS, MD, MS"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addQualification(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                helperText="Press Enter to add qualification"
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& input': { cursor: 'text !important' }
-                }}
-              />
-              <Box sx={{ mt: 1 }}>
-                {tempProfile.qualification?.map((qual, index) => (
-                  <Chip 
-                    key={index} 
-                    label={qual} 
-                    onDelete={() => removeQualification(qual)}
-                    sx={{ mr: 1, mb: 1 }} 
-                  />
-                ))}
-              </Box>
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={tempProfile.address || ''}
-                onChange={(e) => setTempProfile(prev => ({ ...prev, address: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& textarea': { cursor: 'text !important' }
-                }}
+                label="Clinic/House No"
+                value={tempProfile.flatNo || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, flatNo: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
-
-            <Grid item xs={12}>
+            
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Bio"
-                multiline
-                rows={3}
-                value={tempProfile.bio || ''}
-                onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder="Tell patients about yourself, your expertise, and approach to healthcare..."
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& textarea': { cursor: 'text !important' }
-                }}
+                label="Street/Area"
+                value={tempProfile.street || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, street: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="City"
+                value={tempProfile.city || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, city: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
+                helperText="⚠️ Important: Patients will find you based on this city"
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="State"
+                value={tempProfile.state || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, state: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
           </Grid>

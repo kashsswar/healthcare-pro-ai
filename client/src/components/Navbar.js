@@ -53,7 +53,7 @@ function Navbar({ user, onLogout }) {
             </>
           )}
           {user.role === 'doctor' && (
-            <Button color="inherit" onClick={() => navigate('/queue/1')}>
+            <Button color="inherit" onClick={() => navigate(`/queue/${user._id || user.id}`)}>
               {t('myQueue')}
             </Button>
           )}

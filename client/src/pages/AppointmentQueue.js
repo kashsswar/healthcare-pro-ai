@@ -15,10 +15,21 @@ function AppointmentQueue({ user, socket }) {
 
   const loadQueue = React.useCallback(async () => {
     try {
-      const response = await appointmentAPI.getQueue(doctorId);
-      setQueue(response.data);
+      // Use localStorage instead of API
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const doctorQueue = bookedAppointments.filter(apt => 
+        (apt.doctorId === doctorId || apt.doctor === doctorId) && 
+        apt.status === 'scheduled'
+      ).map((apt, index) => ({
+        ...apt,
+        estimatedWaitTime: (index + 1) * 15 // 15 minutes per appointment
+      }));
+      
+      setQueue(doctorQueue);
+      console.log('Queue loaded from localStorage:', doctorQueue);
     } catch (error) {
       console.error('Queue load error:', error);
+      setQueue([]);
     } finally {
       setLoading(false);
     }
@@ -36,7 +47,12 @@ function AppointmentQueue({ user, socket }) {
 
   const startConsultation = async (appointmentId) => {
     try {
-      await appointmentAPI.startConsultation(appointmentId);
+      // Update localStorage instead of API
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const updatedAppointments = bookedAppointments.map(apt => 
+        apt._id === appointmentId ? { ...apt, status: 'in-progress' } : apt
+      );
+      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
       loadQueue();
     } catch (error) {
       console.error('Start consultation error:', error);
@@ -45,12 +61,17 @@ function AppointmentQueue({ user, socket }) {
 
   const completeConsultation = async (appointmentId) => {
     try {
-      await appointmentAPI.completeConsultation(appointmentId, {
-        diagnosis: 'Consultation completed',
-        prescription: [],
-        notes: 'Standard consultation',
-        followUpRequired: false
-      });
+      // Update localStorage instead of API
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const updatedAppointments = bookedAppointments.map(apt => 
+        apt._id === appointmentId ? { 
+          ...apt, 
+          status: 'completed',
+          diagnosis: 'Consultation completed',
+          completedAt: new Date().toISOString()
+        } : apt
+      );
+      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
       loadQueue();
     } catch (error) {
       console.error('Complete consultation error:', error);

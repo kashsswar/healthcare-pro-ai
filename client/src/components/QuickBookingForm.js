@@ -54,11 +54,18 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
       existingAppointments.push(appointmentData);
       localStorage.setItem('bookedAppointments', JSON.stringify(existingAppointments));
 
+      console.log('Appointment saved to localStorage:', appointmentData);
+      
       if (onBookingConfirm) {
         onBookingConfirm(appointmentData);
       }
 
       alert(`Appointment booked successfully with Dr. ${doctor.userId.name} on ${selectedDate} at ${selectedTime}`);
+      
+      // Trigger page refresh to update dashboard
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       
       // Reset form
       setSymptoms('');

@@ -14,6 +14,7 @@ function DoctorAvailabilityChecker() {
   });
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const specializations = [
     'General Medicine', 'Cardiology', 'Dermatology', 'Pediatrics',
@@ -28,6 +29,7 @@ function DoctorAvailabilityChecker() {
     }
 
     setSearching(true);
+    setHasSearched(true);
     
     // Get real doctors from API or create sample data
     setTimeout(async () => {
@@ -129,7 +131,7 @@ function DoctorAvailabilityChecker() {
     <Card sx={{ mb: 3 }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <AccessTime color="primary" sx={{ mr: 1 }} />
+          <AccessTime color="primary" sx={{ mr: 1, cursor: 'pointer' }} />
           <Typography variant="h6">
             🔍 Find Available Doctors by Time & Specialization
           </Typography>
@@ -154,7 +156,14 @@ function DoctorAvailabilityChecker() {
               value={searchParams.time}
               onChange={(e) => setSearchParams({ ...searchParams, time: e.target.value })}
               InputLabelProps={{ shrink: true }}
+              inputProps={{ style: { cursor: 'pointer' } }}
               fullWidth
+              sx={{ 
+                cursor: 'pointer',
+                '& input': { cursor: 'pointer !important' },
+                '& .MuiInputBase-root': { cursor: 'pointer' },
+                '& input::-webkit-calendar-picker-indicator': { cursor: 'pointer' }
+              }}
             />
           </Grid>
 
@@ -231,7 +240,7 @@ function DoctorAvailabilityChecker() {
           </Box>
         )}
 
-        {availableDoctors.length === 0 && searchParams.time && searchParams.specialization && !searching && (
+        {availableDoctors.length === 0 && hasSearched && !searching && (
           <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'warning.light', borderRadius: 1 }}>
             <Typography variant="h6" color="warning.contrastText">
               😔 No doctors available

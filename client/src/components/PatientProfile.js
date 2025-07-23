@@ -11,7 +11,10 @@ function PatientProfile({ user, onUpdate }) {
     dateOfBirth: '',
     gender: '',
     phone: user.phone || '',
-    address: ''
+    flatNo: '',
+    street: '',
+    city: '',
+    state: ''
   });
   const [editOpen, setEditOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
@@ -83,32 +86,30 @@ function PatientProfile({ user, onUpdate }) {
             </Button>
           </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Date of Birth</Typography>
-              <Typography variant="body1">{profile.dateOfBirth || 'Not set'}</Typography>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Age</Typography>
-              <Typography variant="body1">{profile.age || 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Gender</Typography>
-              <Typography variant="body1">{profile.gender || 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary">Phone Number</Typography>
-              <Typography variant="body1">{profile.phone || 'Not set'}</Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" color="textSecondary">Address</Typography>
-              <Typography variant="body1">{profile.address || 'Not set'}</Typography>
-            </Grid>
-          </Grid>
+          {profile.dateOfBirth || profile.gender ? (
+            <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>📅 DOB:</strong> {profile.dateOfBirth} (Age: {profile.age})
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>👤 Gender:</strong> {profile.gender}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>📱 Phone:</strong> {profile.phone}
+              </Typography>
+              {(profile.flatNo || profile.street || profile.city || profile.state) && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>🏠 Address:</strong> {profile.flatNo} {profile.street}, {profile.city}, {profile.state}
+                </Typography>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="info.contrastText">
+                📝 Please complete your profile by clicking "Edit Profile" above.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -125,11 +126,10 @@ function PatientProfile({ user, onUpdate }) {
                 value={tempProfile.dateOfBirth || ''}
                 onChange={(e) => handleTempDOBChange(e.target.value)}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ style: { cursor: 'pointer' } }}
                 sx={{ 
+                  cursor: 'pointer',
                   '& .MuiInputBase-root': { cursor: 'pointer' },
-                  '& .MuiInputBase-input': { cursor: 'pointer' },
-                  '& input': { cursor: 'pointer !important' }
+                  '& input': { cursor: 'pointer' }
                 }}
               />
             </Grid>
@@ -141,47 +141,21 @@ function PatientProfile({ user, onUpdate }) {
                 value={tempProfile.age || ''}
                 InputProps={{ readOnly: true }}
                 helperText="Auto-calculated from date of birth"
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'not-allowed' },
-                  '& .MuiInputBase-input': { cursor: 'not-allowed' },
-                  '& input': { cursor: 'not-allowed !important' }
-                }}
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth sx={{ 
-                '& .MuiInputBase-root': { cursor: 'pointer' },
-                '& .MuiSelect-select': { cursor: 'pointer' },
-                '& .MuiInputBase-input': { cursor: 'pointer' }
-              }}>
+              <FormControl fullWidth sx={{ cursor: 'pointer' }}>
                 <InputLabel>Gender</InputLabel>
                 <Select
                   value={tempProfile.gender || ''}
                   onChange={(e) => setTempProfile(prev => ({ ...prev, gender: e.target.value }))}
                   label="Gender"
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 200,
-                        overflow: 'auto'
-                      }
-                    }
-                  }}
+                  sx={{ cursor: 'pointer' }}
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>
                   <MenuItem value="Other">Other</MenuItem>
-                  <MenuItem disabled sx={{ justifyContent: 'center', bgcolor: 'primary.main', color: 'white' }}>
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      onClick={() => document.activeElement.blur()}
-                      sx={{ minWidth: '60px' }}
-                    >
-                      OK
-                    </Button>
-                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -192,27 +166,47 @@ function PatientProfile({ user, onUpdate }) {
                 label="Phone Number"
                 value={tempProfile.phone || ''}
                 onChange={(e) => setTempProfile(prev => ({ ...prev, phone: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& input': { cursor: 'text !important' }
-                }}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={tempProfile.address || ''}
-                onChange={(e) => setTempProfile(prev => ({ ...prev, address: e.target.value }))}
-                sx={{ 
-                  '& .MuiInputBase-root': { cursor: 'text' },
-                  '& .MuiInputBase-input': { cursor: 'text' },
-                  '& textarea': { cursor: 'text !important' }
-                }}
+                label="Flat/House No"
+                value={tempProfile.flatNo || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, flatNo: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Street/Area"
+                value={tempProfile.street || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, street: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="City"
+                value={tempProfile.city || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, city: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="State"
+                value={tempProfile.state || ''}
+                onChange={(e) => setTempProfile(prev => ({ ...prev, state: e.target.value }))}
+                sx={{ cursor: 'pointer' }}
               />
             </Grid>
           </Grid>

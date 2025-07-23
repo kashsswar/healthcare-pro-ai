@@ -22,19 +22,61 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   useEffect(() => {
     // Get patient's city from profile
     const patientProfile = JSON.parse(localStorage.getItem(`patient_${user._id}_profile`) || '{}');
-    const cityFromProfile = patientProfile.address?.split(',').pop()?.trim() || 'Mumbai';
-    setPatientCity(cityFromProfile);
-    setSelectedCity(cityFromProfile);
+    const cityFromProfile = patientProfile.city; // No default - use actual city only
+    console.log('Patient profile:', patientProfile);
+    console.log('Patient city:', cityFromProfile);
     
-    loadDoctors(cityFromProfile);
+    if (cityFromProfile) {
+      setPatientCity(cityFromProfile);
+      setSelectedCity(cityFromProfile);
+      loadDoctors(cityFromProfile);
+    } else {
+      setLoading(false); // Stop loading if no city in profile
+    }
   }, [user._id]);
 
   const loadDoctors = async (city = patientCity) => {
     try {
       setLoading(true);
       
-      // Mock doctors with different cities
+      // Get real doctors from localStorage profiles
+      const realDoctors = [];
+      
+      // Check for saved doctor profiles
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
+          try {
+            const doctorProfile = JSON.parse(localStorage.getItem(key));
+            const doctorId = key.replace('doctor_', '').replace('_profile', '');
+            
+            if (doctorProfile.city && doctorProfile.specialization) {
+              realDoctors.push({
+                _id: doctorId,
+                userId: { name: doctorProfile.name || 'Doctor' },
+                specialization: doctorProfile.specialization,
+                experience: parseInt(doctorProfile.experience) || 5,
+                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
+                rating: 4.5,
+                finalRating: 4.5,
+                qualification: doctorProfile.qualification?.split(',') || ['MBBS'],
+                isVerified: true,
+                location: { 
+                  city: doctorProfile.city, 
+                  address: `${doctorProfile.flatNo} ${doctorProfile.street}, ${doctorProfile.city}`.trim()
+                },
+                availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
+              });
+            }
+          } catch (error) {
+            console.log('Error parsing doctor profile:', error);
+          }
+        }
+      }
+      
+      // Mock doctors with different cities - fallback data
       const mockDoctors = [
+        // Mumbai doctors
         {
           _id: 'doc1',
           userId: { name: 'Rajesh Kumar' },
@@ -62,6 +104,20 @@ function DoctorsByLocation({ user, onBookAppointment }) {
           availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
         },
         {
+          _id: 'doc5',
+          userId: { name: 'Neha Joshi' },
+          specialization: 'Gynecology',
+          experience: 12,
+          consultationFee: 650,
+          rating: 4.7,
+          finalRating: 4.7,
+          qualification: ['MBBS', 'MD Gynecology'],
+          isVerified: true,
+          location: { city: 'Mumbai', address: 'Powai, Mumbai' },
+          availability: { isAvailable: true, timings: { from: '09:30', to: '17:30' } }
+        },
+        // Delhi doctors
+        {
           _id: 'doc3',
           userId: { name: 'Amit Patel' },
           specialization: 'Dermatology',
@@ -75,6 +131,20 @@ function DoctorsByLocation({ user, onBookAppointment }) {
           availability: { isAvailable: true, timings: { from: '11:00', to: '19:00' } }
         },
         {
+          _id: 'doc6',
+          userId: { name: 'Vikram Singh' },
+          specialization: 'Orthopedics',
+          experience: 18,
+          consultationFee: 900,
+          rating: 4.9,
+          finalRating: 4.9,
+          qualification: ['MBBS', 'MS Orthopedics'],
+          isVerified: true,
+          location: { city: 'Delhi', address: 'Lajpat Nagar, Delhi' },
+          availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
+        },
+        // Bangalore doctors
+        {
           _id: 'doc4',
           userId: { name: 'Sunita Reddy' },
           specialization: 'Pediatrics',
@@ -86,15 +156,50 @@ function DoctorsByLocation({ user, onBookAppointment }) {
           isVerified: true,
           location: { city: 'Bangalore', address: 'Koramangala, Bangalore' },
           availability: { isAvailable: true, timings: { from: '09:00', to: '16:00' } }
+        },
+        // Pune doctors
+        {
+          _id: 'doc7',
+          userId: { name: 'Ravi Deshmukh' },
+          specialization: 'General Medicine',
+          experience: 14,
+          consultationFee: 550,
+          rating: 4.4,
+          finalRating: 4.4,
+          qualification: ['MBBS', 'MD'],
+          isVerified: true,
+          location: { city: 'Pune', address: 'Koregaon Park, Pune' },
+          availability: { isAvailable: true, timings: { from: '08:00', to: '16:00' } }
+        },
+        {
+          _id: 'doc8',
+          userId: { name: 'Kavita Joshi' },
+          specialization: 'Gynecology',
+          experience: 16,
+          consultationFee: 750,
+          rating: 4.7,
+          finalRating: 4.7,
+          qualification: ['MBBS', 'MD Gynecology'],
+          isVerified: true,
+          location: { city: 'Pune', address: 'Baner, Pune' },
+          availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
         }
       ];
 
+      // Combine real doctors with mock doctors
+      const allDoctors = [...realDoctors, ...mockDoctors];
+      
       // Get unique cities
-      const cities = [...new Set(mockDoctors.map(d => d.location.city))];
+      const cities = [...new Set(allDoctors.map(d => d.location.city))];
       setAvailableCities(cities);
 
-      // Filter doctors by selected city
-      const filteredDoctors = mockDoctors.filter(d => d.location.city === city);
+      // Filter doctors by selected city (exact match)
+      const filteredDoctors = allDoctors.filter(d => 
+        d.location.city.toLowerCase() === city.toLowerCase()
+      );
+      console.log('Filtering doctors for city:', city);
+      console.log('Real doctors found:', realDoctors.length);
+      console.log('Total doctors found:', filteredDoctors.length);
       setDoctors(filteredDoctors);
 
     } catch (error) {
@@ -118,7 +223,11 @@ function DoctorsByLocation({ user, onBookAppointment }) {
 
   const handleCustomCitySearch = () => {
     if (customCity.trim()) {
-      loadDoctors(customCity.trim());
+      const searchCity = customCity.trim();
+      setSelectedCity(searchCity); // Update selected city to custom city
+      setShowCustomInput(false); // Hide custom input after search
+      loadDoctors(searchCity);
+      setCustomCity(''); // Clear custom input field
     }
   };
 
@@ -129,6 +238,17 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       </Box>
     );
   }
+  
+  if (!patientCity) {
+    return (
+      <Alert severity="info" sx={{ mb: 3 }}>
+        <Typography variant="h6">📍 Complete Your Profile</Typography>
+        <Typography variant="body2">
+          Please add your city in the Patient Profile section above to see doctors in your area.
+        </Typography>
+      </Alert>
+    );
+  }
 
   return (
     <Box>
@@ -136,7 +256,7 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            📍 Your Location: {patientCity}
+            📍 {showOtherCities && selectedCity !== patientCity ? `Searching in: ${selectedCity}` : `Your Location: ${patientCity}`}
           </Typography>
           
           <FormControlLabel
@@ -227,12 +347,12 @@ function DoctorsByLocation({ user, onBookAppointment }) {
 
       {/* Results */}
       <Typography variant="h6" gutterBottom>
-        Doctors in {selectedCity === 'other' ? (customCity || 'Custom Location') : selectedCity} ({doctors.length})
+        Doctors in {selectedCity} ({doctors.length})
       </Typography>
 
       {doctors.length === 0 ? (
         <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="h6">No doctors found in {selectedCity === 'other' ? (customCity || 'this location') : selectedCity}</Typography>
+          <Typography variant="h6">No doctors found in {selectedCity}</Typography>
           <Typography variant="body2">
             We don't have any doctors available in this city yet. 
             Try selecting a different city or check back later.

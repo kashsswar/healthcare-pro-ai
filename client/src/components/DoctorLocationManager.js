@@ -33,17 +33,8 @@ function DoctorLocationManager({ user }) {
         setHasLocation(locationData.address && locationData.city);
       }
       
-      // Try to load from API
-      const response = await axios.get(`/api/doctors/${user.doctorId || user._id}`);
-      if (response.data.location) {
-        setLocation({
-          address: response.data.location.address || '',
-          city: response.data.location.city || '',
-          state: response.data.location.state || '',
-          pincode: response.data.location.pincode || '',
-          landmark: response.data.location.landmark || ''
-        });
-      }
+      // Skip API call - use only localStorage
+      console.log('Using localStorage for location data');
     } catch (error) {
       console.log('Using default location settings');
     }
@@ -56,14 +47,8 @@ function DoctorLocationManager({ user }) {
       // Save to localStorage
       localStorage.setItem(`doctor_${user.doctorId || user._id}_location`, JSON.stringify(location));
       
-      // Try to save to API
-      try {
-        await axios.patch(`/api/doctors/${user.doctorId || user._id}/location`, {
-          location: location
-        });
-      } catch (apiError) {
-        console.log('API save failed, using localStorage');
-      }
+      // Skip API save - use only localStorage
+      console.log('Location saved to localStorage only');
       
       setMessage('Location saved successfully! Patients can now find you by location.');
       setHasLocation(true);
