@@ -11,9 +11,29 @@ function AdminDoctorsList() {
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [filterBy, setFilterBy] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadDoctors();
+    
+    // Auto-refresh when data changes
+    const handleRefresh = () => {
+      console.log('Auto-refreshing doctors list...');
+      setRefreshTrigger(prev => prev + 1);
+      loadDoctors();
+    };
+    
+    window.addEventListener('doctorProfileUpdated', handleRefresh);
+    window.addEventListener('adminRatingUpdated', handleRefresh);
+    window.addEventListener('appointmentUpdated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('doctorProfileUpdated', handleRefresh);
+      window.removeEventListener('adminRatingUpdated', handleRefresh);
+      window.removeEventListener('appointmentUpdated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+    };
   }, []);
 
   useEffect(() => {
@@ -22,10 +42,72 @@ function AdminDoctorsList() {
 
   const loadDoctors = async () => {
     try {
-      const response = await axios.get('/api/doctors');
-      setDoctors(response.data);
+      // Get real doctors from localStorage
+      const realDoctors = [];
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
+          try {
+            const doctorProfile = JSON.parse(localStorage.getItem(key));
+            const doctorId = key.replace('doctor_', '').replace('_profile', '');
+            
+            if (doctorProfile.specialization) {
+              // Get admin rating boost
+              const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+              const boost = adminBoosts.find(b => b.doctorId === doctorId) || { boostAmount: 0 };
+              
+              // Get patient reviews
+              const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
+              const doctorReviews = reviews.filter(r => r.doctorId === doctorId);
+              const avgRating = doctorReviews.length > 0 
+                ? doctorReviews.reduce((sum, r) => sum + r.rating, 0) / doctorReviews.length 
+                : 4.5;
+              
+              // Calculate patient count and earnings
+              const appointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+              const doctorAppointments = appointments.filter(apt => 
+                (apt.doctorId === doctorId || apt.doctor === doctorId) && 
+                apt.status === 'completed'
+              );
+              
+              const totalPatients = doctorAppointments.length;
+              const monthlyEarnings = doctorAppointments.reduce((total, apt) => {
+                const fee = apt.consultationFee || parseInt(doctorProfile.consultationFee) || 500;
+                return total + fee;
+              }, 0);
+              
+              realDoctors.push({
+                _id: doctorId,
+                userId: { name: doctorProfile.name || 'Doctor' },
+                specialization: doctorProfile.specialization,
+                experience: parseInt(doctorProfile.experience) || 1,
+                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
+                rating: avgRating,
+                finalRating: Math.min(5.0, avgRating + (boost.boostAmount || 0)),
+                adminBoostRating: boost.boostAmount || 0,
+                location: { 
+                  city: doctorProfile.city || 'Not specified',
+                  address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city || 'Not specified'}`.trim().replace(/^,\s*/, '')
+                },
+                totalPatients,
+                monthlyEarnings,
+                isVerified: true,
+                createdAt: doctorProfile.createdAt || new Date().toISOString()
+              });
+            }
+          } catch (error) {
+            console.log('Error parsing doctor profile:', error);
+          }
+        }
+      }
+      
+      console.log('Real doctors loaded:', realDoctors.length);
+      setDoctors(realDoctors);
+      
     } catch (error) {
       console.error('Error loading doctors:', error);
+      setDoctors([]);
     }
   };
 
@@ -72,17 +154,40 @@ function AdminDoctorsList() {
 
   const boostDoctor = async (doctorId) => {
     try {
-      await axios.post('/api/admin/boost-doctor', {
+      // Save boost to localStorage
+      const boosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+      const existingBoostIndex = boosts.findIndex(b => b.doctorId === doctorId);
+      
+      const newBoost = {
         doctorId,
-        boostType: 'rating',
-        boostValue: 0.5,
+        boostAmount: 0.5,
         reason: 'Admin boost for better visibility',
-        adminId: '507f1f77bcf86cd799439011'
-      });
+        adminId: 'admin_' + Date.now(),
+        timestamp: new Date().toISOString()
+      };
+      
+      if (existingBoostIndex >= 0) {
+        // Update existing boost
+        boosts[existingBoostIndex].boostAmount += 0.5;
+        boosts[existingBoostIndex].boostAmount = Math.min(5.0, boosts[existingBoostIndex].boostAmount);
+      } else {
+        // Add new boost
+        boosts.push(newBoost);
+      }
+      
+      localStorage.setItem('adminRatingBoosts', JSON.stringify(boosts));
+      
+      // Dispatch events for auto-refresh
+      window.dispatchEvent(new CustomEvent('adminRatingUpdated', { 
+        detail: { doctorId, boost: newBoost } 
+      }));
+      window.dispatchEvent(new Event('storage'));
+      
       loadDoctors();
-      alert('Doctor boosted successfully!');
+      alert('Doctor boosted successfully! Rating increased by +0.5');
+      
     } catch (error) {
-      alert('Error boosting doctor: ' + error.response?.data?.message);
+      alert('Error boosting doctor: ' + error.message);
     }
   };
 
@@ -163,13 +268,17 @@ function AdminDoctorsList() {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Star color="warning" fontSize="small" />
-                    <Typography variant="body2" fontWeight="bold">
-                      {(doctor.finalRating || doctor.rating || 0).toFixed(1)}
-                    </Typography>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Star color="warning" fontSize="small" />
+                      <Typography variant="body1" fontWeight="bold" sx={{ ml: 0.5 }}>
+                        {(doctor.finalRating || doctor.rating || 0).toFixed(1)}
+                      </Typography>
+                    </Box>
                     {doctor.adminBoostRating > 0 && (
-                      <Chip label={`+${doctor.adminBoostRating}`} size="small" color="secondary" sx={{ ml: 1 }} />
+                      <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 'bold' }}>
+                        +{doctor.adminBoostRating.toFixed(1)}
+                      </Typography>
                     )}
                   </Box>
                 </TableCell>
