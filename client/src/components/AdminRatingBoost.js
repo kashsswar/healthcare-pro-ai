@@ -25,19 +25,49 @@ const AdminRatingBoost = () => {
   const handleBoost = async () => {
     try {
       const adminId = localStorage.getItem('userId'); // Assuming admin ID is stored
-      await axios.post('/api/admin/boost-doctor', {
+      
+      // Save boost to localStorage for offline functionality
+      const boosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+      const newBoost = {
         doctorId: selectedDoctor,
-        boostType: 'rating',
-        boostValue: parseFloat(boostValue),
+        boostAmount: parseFloat(boostValue),
         reason,
-        adminId
-      });
+        adminId,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Remove existing boost for this doctor and add new one
+      const updatedBoosts = boosts.filter(b => b.doctorId !== selectedDoctor);
+      updatedBoosts.push(newBoost);
+      localStorage.setItem('adminRatingBoosts', JSON.stringify(updatedBoosts));
+      
+      // Dispatch auto-refresh events
+      window.dispatchEvent(new CustomEvent('adminRatingUpdated', { 
+        detail: { doctorId: selectedDoctor, boost: newBoost } 
+      }));
+      window.dispatchEvent(new Event('storage'));
+      
+      console.log('Admin rating boost saved and events dispatched');
+      
+      // Try API call (may fail in offline mode)
+      try {
+        await axios.post('/api/admin/boost-doctor', {
+          doctorId: selectedDoctor,
+          boostType: 'rating',
+          boostValue: parseFloat(boostValue),
+          reason,
+          adminId
+        });
+      } catch (apiError) {
+        console.log('API call failed, using localStorage only');
+      }
+      
       setMessage('Doctor rating boosted successfully!');
       setSelectedDoctor('');
       setBoostValue(0);
       setReason('');
     } catch (error) {
-      setMessage('Error boosting rating: ' + error.response?.data?.message);
+      setMessage('Error boosting rating: ' + (error.response?.data?.message || error.message));
     }
   };
 

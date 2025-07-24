@@ -10,6 +10,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import ShareDoctor from '../components/ShareDoctor';
 import DoctorCategories from '../components/DoctorCategories';
 import PatientReview from '../components/PatientReview';
+import QuickBookingForm from '../components/QuickBookingForm';
 
 function DoctorList({ user }) {
   const [doctors, setDoctors] = useState([]);
@@ -20,12 +21,31 @@ function DoctorList({ user }) {
   const [shareDoctor, setShareDoctor] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
+  const [bookingDialog, setBookingDialog] = useState({ open: false, doctor: null });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
   useEffect(() => {
     loadDoctors();
-  }, []);
+    
+    // Auto-refresh when profiles change
+    const handleRefresh = () => {
+      console.log('Auto-refreshing doctor list...');
+      setRefreshTrigger(prev => prev + 1);
+      loadDoctors(selectedCategory);
+    };
+    
+    window.addEventListener('doctorProfileUpdated', handleRefresh);
+    window.addEventListener('adminRatingUpdated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('doctorProfileUpdated', handleRefresh);
+      window.removeEventListener('adminRatingUpdated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+    };
+  }, [selectedCategory]);
 
   const filterDoctors = React.useCallback(() => {
     if (!searchTerm) {
@@ -48,98 +68,100 @@ function DoctorList({ user }) {
   const loadDoctors = async (category = null) => {
     try {
       setLoading(true);
-      let data = [];
       
-      try {
-        const response = await fetch('/api/doctors');
-        data = await response.json();
-      } catch (apiError) {
-        console.log('API failed, using sample data');
-        // Sample doctors data
-        data = [
-          {
-            _id: 'doc1',
-            userId: { name: 'Rajesh Kumar' },
-            specialization: 'General Medicine',
-            experience: 10,
-            consultationFee: 500,
-            rating: 4.5,
-            finalRating: 4.5,
-            reviewCount: 25,
-            location: { city: 'Mumbai' },
-            avgConsultationTime: 30,
-            isVerified: true
-          },
-          {
-            _id: 'doc2',
-            userId: { name: 'Priya Sharma' },
-            specialization: 'Cardiology',
-            experience: 15,
-            consultationFee: 800,
-            rating: 4.8,
-            finalRating: 4.8,
-            reviewCount: 40,
-            location: { city: 'Mumbai' },
-            avgConsultationTime: 45,
-            isVerified: true
-          },
-          {
-            _id: 'doc3',
-            userId: { name: 'Amit Patel' },
-            specialization: 'Dermatology',
-            experience: 8,
-            consultationFee: 600,
-            rating: 4.3,
-            finalRating: 4.3,
-            reviewCount: 18,
-            location: { city: 'Delhi' },
-            avgConsultationTime: 25,
-            isVerified: true
-          },
-          {
-            _id: 'doc4',
-            userId: { name: 'Sunita Reddy' },
-            specialization: 'Pediatrics',
-            experience: 12,
-            consultationFee: 700,
-            rating: 4.6,
-            finalRating: 4.6,
-            reviewCount: 32,
-            location: { city: 'Bangalore' },
-            avgConsultationTime: 35,
-            isVerified: true
-          },
-          {
-            _id: 'doc5',
-            userId: { name: 'Vikram Singh' },
-            specialization: 'Orthopedics',
-            experience: 18,
-            consultationFee: 900,
-            rating: 4.9,
-            finalRating: 4.9,
-            reviewCount: 55,
-            location: { city: 'Delhi' },
-            avgConsultationTime: 40,
-            isVerified: true
-          },
-          {
-            _id: 'doc6',
-            userId: { name: 'Neha Joshi' },
-            specialization: 'Gynecology',
-            experience: 12,
-            consultationFee: 650,
-            rating: 4.7,
-            finalRating: 4.7,
-            reviewCount: 28,
-            location: { city: 'Mumbai' },
-            avgConsultationTime: 30,
-            isVerified: true
+      // Get real doctors from localStorage profiles
+      const realDoctors = [];
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
+          try {
+            const doctorProfile = JSON.parse(localStorage.getItem(key));
+            const doctorId = key.replace('doctor_', '').replace('_profile', '');
+            
+            if (doctorProfile.city && doctorProfile.specialization) {
+              // Get admin rating boost
+              const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+              const boost = adminBoosts.find(b => b.doctorId === doctorId) || { boostAmount: 0 };
+              
+              // Get reviews
+              const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
+              const doctorReviews = reviews.filter(r => r.doctorId === doctorId);
+              const avgRating = doctorReviews.length > 0 
+                ? doctorReviews.reduce((sum, r) => sum + r.rating, 0) / doctorReviews.length 
+                : 4.5;
+              
+              realDoctors.push({
+                _id: doctorId,
+                userId: { name: doctorProfile.name || 'Doctor' },
+                specialization: doctorProfile.specialization,
+                experience: parseInt(doctorProfile.experience) || 5,
+                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
+                rating: avgRating,
+                finalRating: Math.min(5.0, avgRating + (boost.boostAmount || 0)),
+                reviewCount: doctorReviews.length,
+                location: { 
+                  city: doctorProfile.city.trim(), 
+                  address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city}`.trim().replace(/^,\s*/, '')
+                },
+                avgConsultationTime: 30,
+                isVerified: true,
+                adminBoostRating: boost.boostAmount || 0
+              });
+            }
+          } catch (error) {
+            console.log('Error parsing doctor profile:', error);
           }
-        ];
+        }
       }
       
+      // Mock doctors as fallback
+      const mockDoctors = [
+        {
+          _id: 'mock1',
+          userId: { name: 'Rajesh Kumar' },
+          specialization: 'General Medicine',
+          experience: 10,
+          consultationFee: 500,
+          rating: 4.5,
+          finalRating: 4.5,
+          reviewCount: 25,
+          location: { city: 'Mumbai' },
+          avgConsultationTime: 30,
+          isVerified: true
+        },
+        {
+          _id: 'mock2',
+          userId: { name: 'Priya Sharma' },
+          specialization: 'Cardiology',
+          experience: 15,
+          consultationFee: 800,
+          rating: 4.8,
+          finalRating: 4.8,
+          reviewCount: 40,
+          location: { city: 'Mumbai' },
+          avgConsultationTime: 45,
+          isVerified: true
+        },
+        {
+          _id: 'mock3',
+          userId: { name: 'Amit Patel' },
+          specialization: 'Dermatology',
+          experience: 8,
+          consultationFee: 600,
+          rating: 4.3,
+          finalRating: 4.3,
+          reviewCount: 18,
+          location: { city: 'Delhi' },
+          avgConsultationTime: 25,
+          isVerified: true
+        }
+      ];
+      
+      // Combine real and mock doctors
+      const data = [...realDoctors, ...mockDoctors];
+      
       if (category) {
-        // Filter doctors by selected category/specialization
         const filtered = data.filter(doctor => 
           doctor.specialization === category
         );
@@ -349,7 +371,7 @@ function DoctorList({ user }) {
                 <Button 
                   fullWidth 
                   variant="contained"
-                  onClick={() => navigate(`/book-appointment/${doctor._id}`)}
+                  onClick={() => setBookingDialog({ open: true, doctor })}
                   sx={{ mb: 1 }}
                 >
                   {t('bookAppointment')}
@@ -402,6 +424,16 @@ function DoctorList({ user }) {
               ? { ...d, rating: newRating, finalRating: newRating + (d.adminBoostRating || 0) }
               : d
           ));
+        }}
+      />
+      
+      <QuickBookingForm
+        open={bookingDialog.open}
+        onClose={() => setBookingDialog({ open: false, doctor: null })}
+        doctor={bookingDialog.doctor}
+        patient={user}
+        onBookingConfirm={(appointmentData) => {
+          console.log('Appointment booked from doctor list:', appointmentData);
         }}
       />
       

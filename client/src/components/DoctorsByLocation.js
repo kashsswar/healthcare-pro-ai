@@ -18,6 +18,7 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   const [customCity, setCustomCity] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [bookingDialog, setBookingDialog] = useState({ open: false, doctor: null });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     // Get patient's city from profile
@@ -46,18 +47,23 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   useEffect(() => {
     const handleStorageChange = () => {
       console.log('Storage change detected, reloading doctors for city:', selectedCity);
+      setRefreshTrigger(prev => prev + 1);
       if (selectedCity) {
         loadDoctors(selectedCity);
       }
     };
     
-    // Listen for both storage events and custom events
+    // Listen for all profile update events
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('doctorProfileUpdated', handleStorageChange);
+    window.addEventListener('patientProfileUpdated', handleStorageChange);
+    window.addEventListener('adminRatingUpdated', handleStorageChange);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('doctorProfileUpdated', handleStorageChange);
+      window.removeEventListener('patientProfileUpdated', handleStorageChange);
+      window.removeEventListener('adminRatingUpdated', handleStorageChange);
     };
   }, [selectedCity]);
   

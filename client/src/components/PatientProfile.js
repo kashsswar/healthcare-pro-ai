@@ -54,6 +54,15 @@ function PatientProfile({ user, onUpdate }) {
   const saveProfile = () => {
     setProfile(tempProfile);
     localStorage.setItem(`patient_${user._id}_profile`, JSON.stringify(tempProfile));
+    
+    // Trigger auto-refresh events
+    window.dispatchEvent(new CustomEvent('patientProfileUpdated', { 
+      detail: { patientId: user._id, profile: tempProfile } 
+    }));
+    window.dispatchEvent(new Event('storage'));
+    
+    console.log('Patient profile saved and events dispatched');
+    
     if (onUpdate) onUpdate(tempProfile);
     setEditOpen(false);
     alert('Profile updated successfully!');

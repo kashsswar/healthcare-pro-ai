@@ -82,6 +82,10 @@ function Dashboard({ user, socket }) {
     const doctorId = user._id || user.id;
     const today = new Date().toDateString();
     
+    // Get current consultation fee from doctor profile
+    const doctorProfile = JSON.parse(localStorage.getItem(`doctor_${doctorId}_profile`) || '{}');
+    const currentFee = parseInt(doctorProfile.consultationFee) || 500;
+    
     const completedToday = bookedAppointments.filter(apt => {
       const aptDate = new Date(apt.scheduledTime).toDateString();
       return (apt.doctorId === doctorId || apt.doctor === doctorId) && 
@@ -90,8 +94,48 @@ function Dashboard({ user, socket }) {
     });
     
     return completedToday.reduce((total, apt) => {
-      return total + (apt.consultationFee || 500);
+      // Use the fee from appointment or current doctor fee
+      const fee = apt.consultationFee || currentFee;
+      return total + fee;
     }, 0);
+  };
+  
+  const getTotalEarnings = () => {
+    const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+    const cancelledAppointments = JSON.parse(localStorage.getItem('cancelledAppointments') || '[]');
+    const doctorId = user._id || user.id;
+    
+    // Get current consultation fee from doctor profile
+    const doctorProfile = JSON.parse(localStorage.getItem(`doctor_${doctorId}_profile`) || '{}');
+    const currentFee = parseInt(doctorProfile.consultationFee) || 500;
+    
+    // Calculate earnings from completed appointments
+    const completedAppointments = bookedAppointments.filter(apt => 
+      (apt.doctorId === doctorId || apt.doctor === doctorId) && 
+      apt.status === 'completed'
+    );
+    
+    const totalEarned = completedAppointments.reduce((total, apt) => {
+      const fee = apt.consultationFee || currentFee;
+      return total + fee;
+    }, 0);
+    
+    // Calculate refunds from cancelled appointments
+    const doctorCancellations = cancelledAppointments.filter(apt => 
+      apt.doctorId === doctorId || apt.doctor === doctorId
+    );
+    
+    const totalRefunded = doctorCancellations.reduce((total, apt) => {
+      return total + (apt.refundAmount || apt.consultationFee || currentFee);
+    }, 0);
+    
+    return {
+      totalEarned,
+      totalRefunded,
+      netEarnings: totalEarned - totalRefunded,
+      completedCount: completedAppointments.length,
+      cancelledCount: doctorCancellations.length
+    };
   };
   
   const getRealRating = () => {
@@ -164,21 +208,38 @@ function Dashboard({ user, socket }) {
     }
   }, [user.id, user.email]);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
   useEffect(() => {
     loadDashboardData();
     // Reset to main dashboard tab when component mounts
     setActiveTab(0);
     
-    // Socket disabled to prevent connection errors
-    // if (socket) {
-    //   socket.on('appointment-rescheduled', (data) => {
-    //     setQueueUpdates(prev => ({ ...prev, [data.appointmentId]: data }));
-    //   });
-    //   
-    //   socket.on('consultation-started', () => {
-    //     loadDashboardData();
-    //   });
-    // }
+    // Auto-refresh system for all profile changes
+    const handleRefresh = () => {
+      console.log('Auto-refreshing dashboard data...');
+      setRefreshTrigger(prev => prev + 1);
+      loadDashboardData();
+    };
+    
+    // Listen for all types of profile updates
+    window.addEventListener('doctorProfileUpdated', handleRefresh);
+    window.addEventListener('patientProfileUpdated', handleRefresh);
+    window.addEventListener('adminRatingUpdated', handleRefresh);
+    window.addEventListener('appointmentUpdated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    
+    // Periodic auto-refresh every 30 seconds
+    const autoRefreshInterval = setInterval(handleRefresh, 30000);
+    
+    return () => {
+      window.removeEventListener('doctorProfileUpdated', handleRefresh);
+      window.removeEventListener('patientProfileUpdated', handleRefresh);
+      window.removeEventListener('adminRatingUpdated', handleRefresh);
+      window.removeEventListener('appointmentUpdated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+      clearInterval(autoRefreshInterval);
+    };
   }, [loadDashboardData]);
 
   const getStatusColor = (status) => {
@@ -217,6 +278,12 @@ function Dashboard({ user, socket }) {
         });
         localStorage.setItem('cancelledAppointments', JSON.stringify(cancelledAppointments));
       }
+      
+      // Dispatch auto-refresh events
+      window.dispatchEvent(new CustomEvent('appointmentUpdated', { 
+        detail: { type: 'cancelled', appointmentId } 
+      }));
+      window.dispatchEvent(new Event('storage'));
       
       // Simulate refund notification
       alert('Appointment cancelled successfully! ₹500 has been refunded to your account. It will reflect in 2-3 business days.');
@@ -291,6 +358,34 @@ function Dashboard({ user, socket }) {
                 </Typography>
                 <Typography variant="h4" color="success.main">₹{getTodayEarnings()}</Typography>
                 <Typography variant="body2">From {getCompletedAppointments()} consultations</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📊 Total Earnings Summary
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="h5" color="success.main">₹{getTotalEarnings().totalEarned}</Typography>
+                    <Typography variant="body2">Total Earned ({getTotalEarnings().completedCount} patients)</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="h5" color="error.main">₹{getTotalEarnings().totalRefunded}</Typography>
+                    <Typography variant="body2">Total Refunded ({getTotalEarnings().cancelledCount} cancellations)</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="h5" color="primary.main">₹{getTotalEarnings().netEarnings}</Typography>
+                    <Typography variant="body2">Net Earnings</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="h5" color="info.main">₹{JSON.parse(localStorage.getItem(`doctor_${user._id || user.id}_profile`) || '{}').consultationFee || 500}</Typography>
+                    <Typography variant="body2">Current Fee/Patient</Typography>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Grid>
