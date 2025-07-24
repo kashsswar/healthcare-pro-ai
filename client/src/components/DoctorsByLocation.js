@@ -21,15 +21,22 @@ function DoctorsByLocation({ user, onBookAppointment }) {
 
   useEffect(() => {
     // Get patient's city from profile
-    const patientProfile = JSON.parse(localStorage.getItem(`patient_${user._id}_profile`) || '{}');
+    const profileKey = `patient_${user._id}_profile`;
+    const patientProfile = JSON.parse(localStorage.getItem(profileKey) || '{}');
     const cityFromProfile = patientProfile.city; // No default - use actual city only
+    
+    console.log('=== PATIENT PROFILE DEBUG ===');
+    console.log('Profile key:', profileKey);
     console.log('Patient profile:', patientProfile);
-    console.log('Patient city:', cityFromProfile);
+    console.log('Patient city from profile:', cityFromProfile);
+    console.log('User ID:', user._id);
+    console.log('============================');
     
     if (cityFromProfile) {
-      setPatientCity(cityFromProfile);
-      setSelectedCity(cityFromProfile);
-      loadDoctors(cityFromProfile);
+      const cleanCity = cityFromProfile.trim();
+      setPatientCity(cleanCity);
+      setSelectedCity(cleanCity);
+      loadDoctors(cleanCity);
     } else {
       setLoading(false); // Stop loading if no city in profile
     }
@@ -193,13 +200,26 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       const cities = [...new Set(allDoctors.map(d => d.location.city))];
       setAvailableCities(cities);
 
-      // Filter doctors by selected city (exact match)
-      const filteredDoctors = allDoctors.filter(d => 
-        d.location.city.toLowerCase() === city.toLowerCase()
-      );
-      console.log('Filtering doctors for city:', city);
+      // Filter doctors by selected city (improved matching)
+      const searchCity = city.toLowerCase().trim();
+      const filteredDoctors = allDoctors.filter(d => {
+        const doctorCity = d.location.city.toLowerCase().trim();
+        return doctorCity === searchCity;
+      });
+      
+      console.log('=== DEBUGGING CITY FILTER ===');
+      console.log('Search city:', searchCity);
       console.log('Real doctors found:', realDoctors.length);
-      console.log('Total doctors found:', filteredDoctors.length);
+      console.log('Mock doctors available:', mockDoctors.length);
+      console.log('Total doctors before filter:', allDoctors.length);
+      console.log('Available cities:', [...new Set(allDoctors.map(d => d.location.city.toLowerCase().trim()))]);
+      console.log('Doctors by city:');
+      allDoctors.forEach(d => {
+        console.log(`  - Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
+      });
+      console.log('Filtered doctors found:', filteredDoctors.length);
+      console.log('==============================');
+      
       setDoctors(filteredDoctors);
 
     } catch (error) {
