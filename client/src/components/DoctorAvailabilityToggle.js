@@ -14,19 +14,30 @@ function DoctorAvailabilityToggle({ user, socket }) {
     startTime: '09:00',
     endTime: '17:00'
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     loadAvailabilityStatus();
     
+    // Auto-refresh when appointments change
+    const handleRefresh = () => {
+      console.log('Refreshing doctor availability...');
+      setRefreshTrigger(prev => prev + 1);
+      loadAvailabilityStatus();
+    };
+    
+    window.addEventListener('appointmentUpdated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    
     if (socket) {
-      socket.on('new-appointment', () => {
-        setWaitingPatients(prev => prev + 1);
-      });
-      
-      socket.on('appointment-completed', () => {
-        setWaitingPatients(prev => Math.max(0, prev - 1));
-      });
+      socket.on('new-appointment', handleRefresh);
+      socket.on('appointment-completed', handleRefresh);
     }
+    
+    return () => {
+      window.removeEventListener('appointmentUpdated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+    };
   }, [socket]);
 
   const loadAvailabilityStatus = async () => {
@@ -45,18 +56,16 @@ function DoctorAvailabilityToggle({ user, socket }) {
         setTimeSlots(JSON.parse(savedTimeSlots));
       }
       
-      // Load real appointments count
-      try {
-        const response = await axios.get(`/api/appointments/doctor/${user.doctorId}`);
-        const appointments = response.data;
-        const waitingCount = appointments.filter(apt => 
-          apt.status === 'scheduled' && 
-          new Date(apt.scheduledTime).toDateString() === new Date().toDateString()
-        ).length;
-        setWaitingPatients(waitingCount);
-      } catch (error) {
-        setWaitingPatients(0);
-      }
+      // Load real appointments count from localStorage
+      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+      const today = new Date().toDateString();
+      const waitingCount = bookedAppointments.filter(apt => {
+        const aptDate = new Date(apt.scheduledTime).toDateString();
+        return (apt.doctorId === user.doctorId || apt.doctor === user.doctorId) && 
+               aptDate === today && 
+               (apt.status === 'scheduled' || apt.status === 'in-progress');
+      }).length;
+      setWaitingPatients(waitingCount);
     } catch (error) {
       console.error('Failed to load availability status:', error);
     }

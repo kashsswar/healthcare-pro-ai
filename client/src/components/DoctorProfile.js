@@ -32,6 +32,21 @@ function DoctorProfile({ user, onUpdate }) {
     
     return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
   };
+  
+  const getReviewCount = () => {
+    const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
+    const doctorReviews = reviews.filter(review => review.doctorId === user._id);
+    return doctorReviews.length;
+  };
+  
+  const getPatientCount = () => {
+    const appointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+    const doctorAppointments = appointments.filter(apt => 
+      (apt.doctorId === user._id || apt.doctor === user._id) && 
+      apt.status === 'completed'
+    );
+    return doctorAppointments.length;
+  };
   const [profile, setProfile] = useState({
     specialization: '',
     experience: '',
@@ -113,6 +128,12 @@ function DoctorProfile({ user, onUpdate }) {
               </Typography>
               <Typography variant="body1" color="success.contrastText">
                 <strong>⭐ Rating:</strong> {getRating()}/5.0 {getAdminBoost() > 0 && `(+${getAdminBoost()} Admin Boost)`}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>📊 Reviews:</strong> {getReviewCount()} patient reviews
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>👥 Patients Treated:</strong> {getPatientCount()} total patients
               </Typography>
               {(profile.flatNo || profile.street || profile.city || profile.state) && (
                 <Typography variant="body1" color="success.contrastText">

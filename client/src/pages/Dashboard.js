@@ -60,8 +60,21 @@ function Dashboard({ user, socket }) {
       const aptDate = new Date(apt.scheduledTime).toDateString();
       return (apt.doctorId === doctorId || apt.doctor === doctorId) && 
              aptDate === today && 
-             apt.status === 'scheduled';
+             (apt.status === 'scheduled' || apt.status === 'in-progress');
     }).length;
+  };
+  
+  const getTodayQueue = () => {
+    const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
+    const doctorId = user._id || user.id;
+    const today = new Date().toDateString();
+    
+    return bookedAppointments.filter(apt => {
+      const aptDate = new Date(apt.scheduledTime).toDateString();
+      return (apt.doctorId === doctorId || apt.doctor === doctorId) && 
+             aptDate === today && 
+             (apt.status === 'scheduled' || apt.status === 'in-progress');
+    });
   };
   
   const getCompletedAppointments = () => {
@@ -337,6 +350,36 @@ function Dashboard({ user, socket }) {
         {/* Doctor Location Manager */}
         <DoctorLocationManager user={{...user, doctorId: user._id || user.id}} />
         
+        {/* Today's Queue */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              📋 Today's Patient Queue ({getTodayQueue().length})
+            </Typography>
+            {getTodayQueue().length === 0 ? (
+              <Typography color="textSecondary">No appointments scheduled for today</Typography>
+            ) : (
+              getTodayQueue().map((appointment) => (
+                <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'grey.50' }}>
+                  <CardContent>
+                    <Typography variant="h6">{appointment.patient?.name || 'Patient'}</Typography>
+                    <Typography variant="body2">📧 {appointment.patient?.email || 'No email'} | 📱 {appointment.patient?.phone || 'No phone'}</Typography>
+                    <Chip 
+                      label={appointment.status?.toUpperCase() || 'SCHEDULED'} 
+                      color={appointment.status === 'in-progress' ? 'warning' : 'primary'}
+                      sx={{ mt: 1 }}
+                    />
+                    <Typography variant="body2" sx={{ mt: 1 }}>Scheduled: {new Date(appointment.scheduledTime).toLocaleString()}</Typography>
+                    {appointment.symptoms && appointment.symptoms.length > 0 && (
+                      <Typography variant="body2">🩺 Symptoms: {appointment.symptoms.join(', ')}</Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
             <Card>
@@ -403,6 +446,7 @@ function Dashboard({ user, socket }) {
               </CardContent>
             </Card>
           </Grid>
+          
         </Grid>
       </Container>
     );
