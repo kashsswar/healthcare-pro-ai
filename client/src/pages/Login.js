@@ -31,6 +31,28 @@ function Login({ onLogin }) {
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Track failed login for security monitoring
+      const failedLogins = JSON.parse(localStorage.getItem('failedLogins') || '[]');
+      failedLogins.push({
+        email: formData.email,
+        timestamp: new Date().toISOString(),
+        ip: '192.168.1.' + Math.floor(Math.random() * 255), // Simulated IP
+        userAgent: navigator.userAgent
+      });
+      
+      // Keep only last 50 failed attempts
+      if (failedLogins.length > 50) {
+        failedLogins.splice(0, failedLogins.length - 50);
+      }
+      
+      localStorage.setItem('failedLogins', JSON.stringify(failedLogins));
+      
+      // Dispatch security event
+      window.dispatchEvent(new CustomEvent('securityThreatDetected', {
+        detail: { type: 'failed_login', email: formData.email }
+      }));
+      
       setError(error.response?.data?.message || 'Network error. Please check your internet connection.');
     } finally {
       setLoading(false);
