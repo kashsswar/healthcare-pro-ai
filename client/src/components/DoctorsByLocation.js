@@ -45,14 +45,29 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   // Reload doctors when localStorage changes (doctor profile updates)
   useEffect(() => {
     const handleStorageChange = () => {
+      console.log('Storage change detected, reloading doctors for city:', selectedCity);
       if (selectedCity) {
         loadDoctors(selectedCity);
       }
     };
     
+    // Listen for both storage events and custom events
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('doctorProfileUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('doctorProfileUpdated', handleStorageChange);
+    };
   }, [selectedCity]);
+  
+  // Add manual refresh function
+  const refreshDoctors = () => {
+    console.log('Manual refresh triggered');
+    if (selectedCity) {
+      loadDoctors(selectedCity);
+    }
+  };
 
   const loadDoctors = async (city = patientCity) => {
     try {
@@ -236,9 +251,13 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       console.log('Mock doctors available:', mockDoctors.length);
       console.log('Total doctors before filter:', allDoctors.length);
       console.log('Available cities:', [...new Set(allDoctors.map(d => d.location.city.toLowerCase().trim()))]);
-      console.log('Doctors by city:');
-      allDoctors.forEach(d => {
-        console.log(`  - Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
+      console.log('Real doctors by city:');
+      realDoctors.forEach(d => {
+        console.log(`  - REAL Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
+      });
+      console.log('Mock doctors by city:');
+      mockDoctors.forEach(d => {
+        console.log(`  - MOCK Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
       });
       console.log('Filtered doctors found:', filteredDoctors.length);
       console.log('==============================');
@@ -295,6 +314,17 @@ function DoctorsByLocation({ user, onBookAppointment }) {
 
   return (
     <Box>
+      {/* Debug Panel */}
+      <Card sx={{ mb: 2, bgcolor: 'grey.100' }}>
+        <CardContent>
+          <Typography variant="subtitle2" gutterBottom>🔧 Debug Info:</Typography>
+          <Typography variant="body2">Patient City: {patientCity || 'Not set'}</Typography>
+          <Typography variant="body2">Selected City: {selectedCity || 'Not set'}</Typography>
+          <Typography variant="body2">Available Cities: {availableCities.join(', ') || 'None'}</Typography>
+          <Typography variant="body2">Total Doctors Found: {doctors.length}</Typography>
+        </CardContent>
+      </Card>
+      
       {/* Location Controls */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -389,9 +419,18 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       </Card>
 
       {/* Results */}
-      <Typography variant="h6" gutterBottom>
-        Doctors in {selectedCity} ({doctors.length})
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">
+          Doctors in {selectedCity} ({doctors.length})
+        </Typography>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={refreshDoctors}
+        >
+          🔄 Refresh
+        </Button>
+      </Box>
 
       {doctors.length === 0 ? (
         <Alert severity="info" sx={{ mb: 3 }}>
@@ -400,19 +439,66 @@ function DoctorsByLocation({ user, onBookAppointment }) {
             We don't have any doctors available in this city yet. 
             Try selecting from available cities: {availableCities.join(', ')}
           </Typography>
-          <Button 
-            variant="contained" 
-            sx={{ mt: 2 }}
-            onClick={() => {
-              if (availableCities.length > 0) {
-                const nearestCity = availableCities[0];
-                setSelectedCity(nearestCity);
-                loadDoctors(nearestCity);
-              }
-            }}
-          >
-            Show doctors in {availableCities[0] || 'nearby cities'}
-          </Button>
+          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+            <Button 
+              variant="contained"
+              onClick={() => {
+                if (availableCities.length > 0) {
+                  const nearestCity = availableCities[0];
+                  setSelectedCity(nearestCity);
+                  loadDoctors(nearestCity);
+                }
+              }}
+            >
+              Show doctors in {availableCities[0] || 'nearby cities'}
+            </Button>
+            <Button 
+              variant="outlined"
+              onClick={() => {
+                // Show all doctors for debugging
+                console.log('Showing all doctors for debugging');
+                const allDoctorsTest = [];
+                
+                // Get all doctor profiles
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
+                    try {
+                      const doctorProfile = JSON.parse(localStorage.getItem(key));
+                      const doctorId = key.replace('doctor_', '').replace('_profile', '');
+                      console.log('Found doctor profile:', doctorProfile);
+                      
+                      if (doctorProfile.specialization) {
+                        allDoctorsTest.push({
+                          _id: doctorId,
+                          userId: { name: doctorProfile.name || 'Doctor' },
+                          specialization: doctorProfile.specialization,
+                          experience: parseInt(doctorProfile.experience) || 5,
+                          consultationFee: parseInt(doctorProfile.consultationFee) || 500,
+                          rating: 4.5,
+                          finalRating: 4.5,
+                          qualification: ['MBBS'],
+                          isVerified: true,
+                          location: { 
+                            city: doctorProfile.city || 'Unknown', 
+                            address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city || 'Unknown'}`.trim()
+                          },
+                          availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
+                        });
+                      }
+                    } catch (error) {
+                      console.log('Error parsing doctor profile:', error);
+                    }
+                  }
+                }
+                
+                console.log('All doctors found:', allDoctorsTest);
+                setDoctors(allDoctorsTest);
+              }}
+            >
+              Show All Doctors (Debug)
+            </Button>
+          </Box>
         </Alert>
       ) : (
         <Grid container spacing={3}>

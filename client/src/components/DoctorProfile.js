@@ -62,8 +62,14 @@ function DoctorProfile({ user, onUpdate }) {
     setProfile(tempProfile);
     localStorage.setItem(`doctor_${user._id}_profile`, JSON.stringify(tempProfile));
     
-    // Trigger storage event for other components to refresh
+    // Trigger multiple events for other components to refresh
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('doctorProfileUpdated', { 
+      detail: { doctorId: user._id, city: tempProfile.city } 
+    }));
+    
+    console.log('Doctor profile saved:', tempProfile);
+    console.log('Events dispatched for profile update');
     
     if (onUpdate) onUpdate(tempProfile);
     setEditOpen(false);

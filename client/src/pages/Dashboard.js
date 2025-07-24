@@ -99,15 +99,16 @@ function Dashboard({ user, socket }) {
     const doctorId = user._id || user.id;
     
     const doctorReviews = reviews.filter(review => review.doctorId === doctorId);
+    const adminBoost = getAdminBoost();
     
     if (doctorReviews.length === 0) {
-      return '0.0';
+      // Show default rating + admin boost if no patient reviews
+      const defaultRating = 4.5;
+      return Math.min(5.0, defaultRating + adminBoost).toFixed(1);
     }
     
     const avgRating = doctorReviews.reduce((sum, review) => sum + review.rating, 0) / doctorReviews.length;
-    const adminBoost = getAdminBoost();
-    
-    return (avgRating + adminBoost).toFixed(1);
+    return Math.min(5.0, avgRating + adminBoost).toFixed(1);
   };
   
   const getAdminBoost = () => {
