@@ -477,25 +477,33 @@ function Dashboard({ user, socket }) {
         </Box>
       ) : (
       <Grid container spacing={3}>
-        {/* Patient Profile */}
-        <Grid item xs={12}>
-          <PatientProfile user={user} />
-        </Grid>
+        {/* Patient Profile - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <PatientProfile user={user} />
+          </Grid>
+        )}
         
-        {/* Local Doctors List */}
-        <Grid item xs={12}>
-          <LocalDoctorsList user={user} onBookAppointment={handleBookAppointment} />
-        </Grid>
+        {/* Local Doctors List - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <LocalDoctorsList user={user} onBookAppointment={handleBookAppointment} />
+          </Grid>
+        )}
         
-        {/* Doctor Availability Checker */}
-        <Grid item xs={12}>
-          <DoctorAvailabilityChecker />
-        </Grid>
+        {/* Doctor Availability Checker - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <DoctorAvailabilityChecker />
+          </Grid>
+        )}
         
-        {/* AI Auto-Marketing */}
-        <Grid item xs={12}>
-          <AutoMarketing />
-        </Grid>
+        {/* AI Auto-Marketing - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <AutoMarketing />
+          </Grid>
+        )}
         
 
         {/* Quick Actions */}
