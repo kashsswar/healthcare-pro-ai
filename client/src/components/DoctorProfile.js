@@ -6,6 +6,32 @@ import {
 import { Person, Save, Edit } from '@mui/icons-material';
 
 function DoctorProfile({ user, onUpdate }) {
+  
+  const getRating = () => {
+    const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
+    const doctorReviews = reviews.filter(review => review.doctorId === user._id);
+    
+    if (doctorReviews.length === 0) {
+      return '4.5';
+    }
+    
+    const avgRating = doctorReviews.reduce((sum, review) => sum + review.rating, 0) / doctorReviews.length;
+    const adminBoost = getAdminBoost();
+    
+    return Math.min(5.0, avgRating + adminBoost).toFixed(1);
+  };
+  
+  const getAdminBoost = () => {
+    const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+    const doctorBoosts = JSON.parse(localStorage.getItem('doctorBoosts') || '[]');
+    const ratingBoosts = JSON.parse(localStorage.getItem('ratingBoosts') || '[]');
+    
+    let boost = adminBoosts.find(b => b.doctorId === user._id) || 
+               doctorBoosts.find(b => b.doctorId === user._id) || 
+               ratingBoosts.find(b => b.doctorId === user._id);
+    
+    return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
+  };
   const [profile, setProfile] = useState({
     specialization: '',
     experience: '',
@@ -35,9 +61,13 @@ function DoctorProfile({ user, onUpdate }) {
   const saveProfile = () => {
     setProfile(tempProfile);
     localStorage.setItem(`doctor_${user._id}_profile`, JSON.stringify(tempProfile));
+    
+    // Trigger storage event for other components to refresh
+    window.dispatchEvent(new Event('storage'));
+    
     if (onUpdate) onUpdate(tempProfile);
     setEditOpen(false);
-    alert('Doctor profile updated successfully!');
+    alert('Doctor profile updated successfully! Patients can now find you in ' + tempProfile.city);
   };
 
   return (
@@ -74,6 +104,9 @@ function DoctorProfile({ user, onUpdate }) {
               </Typography>
               <Typography variant="body1" color="success.contrastText">
                 <strong>📱 Phone:</strong> {profile.phone}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>⭐ Rating:</strong> {getRating()}/5.0 {getAdminBoost() > 0 && `(+${getAdminBoost()} Admin Boost)`}
               </Typography>
               {(profile.flatNo || profile.street || profile.city || profile.state) && (
                 <Typography variant="body1" color="success.contrastText">

@@ -230,8 +230,22 @@ function Dashboard({ user, socket }) {
   };
 
   const upcomingAppointments = appointments.filter(apt => {
-    console.log('Filtering appointment:', apt.status, apt.scheduledTime);
-    return apt.status === 'scheduled' || apt.status === 'pending';
+    const now = new Date();
+    const appointmentTime = new Date(apt.scheduledTime);
+    const isUpcoming = appointmentTime > now;
+    const isScheduled = apt.status === 'scheduled' || apt.status === 'pending';
+    
+    console.log('Filtering appointment:', {
+      status: apt.status,
+      scheduledTime: apt.scheduledTime,
+      appointmentTime: appointmentTime.toLocaleString(),
+      now: now.toLocaleString(),
+      isUpcoming,
+      isScheduled,
+      willShow: isUpcoming && isScheduled
+    });
+    
+    return isUpcoming && isScheduled;
   });
   
   console.log('Upcoming appointments:', upcomingAppointments.length);

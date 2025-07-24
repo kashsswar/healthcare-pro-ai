@@ -41,6 +41,18 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       setLoading(false); // Stop loading if no city in profile
     }
   }, [user._id]);
+  
+  // Reload doctors when localStorage changes (doctor profile updates)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (selectedCity) {
+        loadDoctors(selectedCity);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [selectedCity]);
 
   const loadDoctors = async (city = patientCity) => {
     try {
@@ -58,19 +70,30 @@ function DoctorsByLocation({ user, onBookAppointment }) {
             const doctorId = key.replace('doctor_', '').replace('_profile', '');
             
             if (doctorProfile.city && doctorProfile.specialization) {
+              // Get admin rating boost
+              const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
+              const doctorBoosts = JSON.parse(localStorage.getItem('doctorBoosts') || '[]');
+              const boost = adminBoosts.find(b => b.doctorId === doctorId) || 
+                           doctorBoosts.find(b => b.doctorId === doctorId) || 
+                           { boostAmount: 0 };
+              
+              const baseRating = 4.5;
+              const finalRating = Math.min(5.0, baseRating + (boost.boostAmount || 0));
+              
               realDoctors.push({
                 _id: doctorId,
                 userId: { name: doctorProfile.name || 'Doctor' },
                 specialization: doctorProfile.specialization,
                 experience: parseInt(doctorProfile.experience) || 5,
                 consultationFee: parseInt(doctorProfile.consultationFee) || 500,
-                rating: 4.5,
-                finalRating: 4.5,
+                rating: baseRating,
+                finalRating: finalRating,
+                adminBoost: boost.boostAmount || 0,
                 qualification: doctorProfile.qualification?.split(',') || ['MBBS'],
                 isVerified: true,
                 location: { 
-                  city: doctorProfile.city, 
-                  address: `${doctorProfile.flatNo} ${doctorProfile.street}, ${doctorProfile.city}`.trim()
+                  city: doctorProfile.city.trim(), 
+                  address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city}`.trim().replace(/^,\s*/, '')
                 },
                 availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
               });
@@ -375,8 +398,21 @@ function DoctorsByLocation({ user, onBookAppointment }) {
           <Typography variant="h6">No doctors found in {selectedCity}</Typography>
           <Typography variant="body2">
             We don't have any doctors available in this city yet. 
-            Try selecting a different city or check back later.
+            Try selecting from available cities: {availableCities.join(', ')}
           </Typography>
+          <Button 
+            variant="contained" 
+            sx={{ mt: 2 }}
+            onClick={() => {
+              if (availableCities.length > 0) {
+                const nearestCity = availableCities[0];
+                setSelectedCity(nearestCity);
+                loadDoctors(nearestCity);
+              }
+            }}
+          >
+            Show doctors in {availableCities[0] || 'nearby cities'}
+          </Button>
         </Alert>
       ) : (
         <Grid container spacing={3}>
