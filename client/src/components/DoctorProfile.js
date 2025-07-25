@@ -48,15 +48,16 @@ function DoctorProfile({ user, onUpdate }) {
     return doctorAppointments.length;
   };
   const [profile, setProfile] = useState({
-    specialization: '',
-    experience: '',
-    consultationFee: '',
-    qualification: '',
-    flatNo: '',
-    street: '',
-    city: '',
-    state: '',
-    phone: user.phone || ''
+    specialization: user.specialization || '',
+    experience: user.experience || '',
+    consultationFee: user.consultationFee || '',
+    qualification: user.qualification || '',
+    flatNo: user.flatNo || '',
+    street: user.street || '',
+    city: user.city || '',
+    state: user.state || '',
+    phone: user.phone || '',
+    name: user.name || ''
   });
   const [editOpen, setEditOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
@@ -98,7 +99,7 @@ function DoctorProfile({ user, onUpdate }) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Person color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">👨‍⚕️ Doctor Profile</Typography>
+              <Typography variant="h6">👨‍⚕️ Dr. {user.name}</Typography>
             </Box>
             <Button
               variant="outlined"

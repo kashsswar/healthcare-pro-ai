@@ -19,6 +19,8 @@ import DoctorsByLocation from '../components/DoctorsByLocation';
 import LocalDoctorsList from '../components/LocalDoctorsList';
 import BankDetails from '../components/BankDetails';
 import PatientBankDetails from '../components/PatientBankDetails';
+import DoctorPayouts from '../components/DoctorPayouts';
+import PatientPaymentHistory from '../components/PatientPaymentHistory';
 
 
 function Dashboard({ user, socket }) {
@@ -360,6 +362,9 @@ function Dashboard({ user, socket }) {
         {/* Doctor Location Manager */}
         <DoctorLocationManager user={{...user, doctorId: user._id || user.id}} />
         
+        {/* Doctor Payouts */}
+        <DoctorPayouts user={user} />
+        
         {/* Today's Queue */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -515,6 +520,13 @@ function Dashboard({ user, socket }) {
         {user.role === 'patient' && (
           <Grid item xs={12}>
             <PatientProfile user={user} />
+          </Grid>
+        )}
+        
+        {/* Patient Payment History - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <PatientPaymentHistory user={user} />
           </Grid>
         )}
         

@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doctorAPI, appointmentAPI, aiAPI } from '../services/api';
+import RazorpayPayment from '../components/RazorpayPayment';
 
 function BookAppointment({ user }) {
   const { doctorId } = useParams();
@@ -71,7 +72,25 @@ function BookAppointment({ user }) {
     }
   };
 
-  const handleBooking = async () => {
+  const handlePayment = async () => {
+    try {
+      await RazorpayPayment({
+        amount: doctor.consultationFee,
+        doctorName: doctor.userId?.name || 'Doctor',
+        patientName: user.name,
+        onSuccess: handleBooking,
+        onFailure: (error) => {
+          setError('Payment failed: ' + error);
+          setLoading(false);
+        }
+      });
+    } catch (error) {
+      setError('Payment initialization failed');
+      setLoading(false);
+    }
+  };
+
+  const handleBooking = async (paymentData) => {
     try {
       setLoading(true);
       
@@ -129,7 +148,10 @@ function BookAppointment({ user }) {
         appointmentTime: appointmentData.appointmentTime,
         symptoms: appointmentData.symptoms.split(',').map(s => s.trim()),
         status: 'scheduled',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        paymentId: paymentData?.paymentId,
+        consultationFee: doctor.consultationFee,
+        paymentStatus: 'paid'
       };
       
       bookedAppointments.push(newAppointment);
@@ -231,13 +253,16 @@ function BookAppointment({ user }) {
         <Button 
           variant="contained" 
           fullWidth 
-          onClick={handleBooking}
+          onClick={() => {
+            setLoading(true);
+            handlePayment();
+          }}
           disabled={!formData.preferredDate || !formData.symptoms.trim() || loading}
           sx={{
             cursor: (!formData.preferredDate || !formData.symptoms.trim() || loading) ? 'not-allowed' : 'pointer'
           }}
         >
-          {loading ? 'Booking...' : 'Book Appointment'}
+          {loading ? 'Processing...' : `Pay ₹${doctor.consultationFee} & Book`}
         </Button>
       </Paper>
     </Container>
