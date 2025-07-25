@@ -25,33 +25,29 @@ function LocalDoctorsList({ user, onBookAppointment }) {
   };
 
   const loadLocalDoctors = () => {
-    // Sample doctors with locations
-    const allDoctors = [
-      {
-        _id: '1',
-        userId: { name: 'Dr. Amit Sharma' },
-        specialization: 'Cardiology',
-        rating: 4.8,
-        consultationFee: 500,
-        location: { city: 'Mumbai', state: 'Maharashtra' }
-      },
-      {
-        _id: '2',
-        userId: { name: 'Dr. Priya Patel' },
-        specialization: 'General Medicine',
-        rating: 4.6,
-        consultationFee: 400,
-        location: { city: 'Mumbai', state: 'Maharashtra' }
-      },
-      {
-        _id: '3',
-        userId: { name: 'Dr. Rajesh Kumar' },
-        specialization: 'Dermatology',
-        rating: 4.7,
-        consultationFee: 450,
-        location: { city: 'Delhi', state: 'Delhi' }
-      }
-    ];
+    // Get all registered doctors from localStorage
+    const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    const doctors = allUsers.filter(u => u.role === 'doctor');
+    
+    const allDoctors = doctors.map(doctor => {
+      // Get doctor profile data
+      const profile = JSON.parse(localStorage.getItem(`doctor_${doctor._id}_profile`) || '{}');
+      
+      return {
+        _id: doctor._id,
+        userId: { name: doctor.name },
+        specialization: profile.specialization || 'General Medicine',
+        rating: 4.5,
+        consultationFee: profile.consultationFee || 500,
+        location: { 
+          city: profile.city || 'Not specified', 
+          state: profile.state || 'Not specified' 
+        },
+        phone: profile.phone || doctor.phone,
+        qualification: profile.qualification || 'MBBS',
+        experience: profile.experience || '1'
+      };
+    });
 
     if (patientLocation) {
       // Filter doctors from same city and state

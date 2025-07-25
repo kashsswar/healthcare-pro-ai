@@ -49,7 +49,7 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       console.log('Storage change detected, reloading doctors for city:', selectedCity);
       setRefreshTrigger(prev => prev + 1);
       if (selectedCity) {
-        loadDoctors(selectedCity);
+        setTimeout(() => loadDoctors(selectedCity), 100); // Small delay to ensure localStorage is updated
       }
     };
     
@@ -65,6 +65,17 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       window.removeEventListener('patientProfileUpdated', handleStorageChange);
       window.removeEventListener('adminRatingUpdated', handleStorageChange);
     };
+  }, [selectedCity]);
+  
+  // Auto-refresh every 10 seconds to catch any missed updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (selectedCity) {
+        loadDoctors(selectedCity);
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [selectedCity]);
   
   // Add manual refresh function
