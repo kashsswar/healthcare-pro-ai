@@ -32,7 +32,7 @@ function TermsAndConditions() {
         <Typography variant="body1" paragraph>
           • Consultation fees are payable in advance
           • Refunds processed as per cancellation policy
-          • Platform charges 20% service fee from doctors
+          • Platform charges 12% service fee from doctors
         </Typography>
         
         <Typography variant="h6" gutterBottom>5. Limitation of Liability</Typography>

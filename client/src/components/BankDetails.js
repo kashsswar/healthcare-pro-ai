@@ -42,8 +42,8 @@ function BankDetails({ open, onClose, doctor }) {
       
       <DialogContent>
         <Alert severity="info" sx={{ mb: 2 }}>
-          💰 You receive 80% of consultation fee directly in your bank account. 
-          20% platform fee covers app maintenance, marketing, and AI features.
+          💰 You receive 88% of consultation fee directly in your bank account. 
+          12% platform fee covers app maintenance, marketing, and AI features.
         </Alert>
 
         <TextField
@@ -82,8 +82,8 @@ function BankDetails({ open, onClose, doctor }) {
           <Typography variant="body2">
             ✅ <strong>Payment Process:</strong>
             <br />• Patient pays consultation fee
-            <br />• 80% transferred to your account instantly
-            <br />• 20% retained for platform services
+            <br />• 88% transferred to your account instantly
+            <br />• 12% retained for platform services
             <br />• Daily settlement reports via email
           </Typography>
         </Box>
