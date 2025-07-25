@@ -5,28 +5,7 @@ const User = require('./models/User');
 const Doctor = require('./models/Doctor');
 
 const realDoctors = [
-  {
-    name: "Dr. Mahima Sinsinwar",
-    email: "mahima.sinsinwar@healthpro.com",
-    phone: "+91-9876543210",
-    specialization: "General Medicine",
-    experience: 8,
-    consultationFee: 500,
-    qualification: ["MBBS", "MD Internal Medicine"],
-    location: { city: "Bharatpur", state: "Rajasthan" },
-    about: "General physician with expertise in treating common health conditions and preventive care."
-  },
-  {
-    name: "Dr. Rubina",
-    email: "rubina@healthpro.com", 
-    phone: "+91-9876543211",
-    specialization: "Gynecology",
-    experience: 10,
-    consultationFee: 600,
-    qualification: ["MBBS", "MS Gynecology"],
-    location: { city: "Bharatpur", state: "Rajasthan" },
-    about: "Gynecologist specializing in women's health, pregnancy care, and reproductive health."
-  }
+  // Database cleared - ready for manual doctor addition
 ];
 
 async function addRealDoctors() {
