@@ -65,7 +65,24 @@ function DoctorProfile({ user, onUpdate }) {
   useEffect(() => {
     const savedProfile = localStorage.getItem(`doctor_${user._id}_profile`);
     if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
+      const parsedProfile = JSON.parse(savedProfile);
+      console.log('Loading doctor profile:', parsedProfile);
+      setProfile(parsedProfile);
+    } else {
+      console.log('No saved profile found for doctor:', user._id);
+      // Clear any existing profile data
+      setProfile({
+        specialization: '',
+        experience: '',
+        consultationFee: '',
+        qualification: '',
+        flatNo: '',
+        street: '',
+        city: '',
+        state: '',
+        phone: user.phone || '',
+        name: user.name || ''
+      });
     }
   }, [user._id]);
 
@@ -110,23 +127,33 @@ function DoctorProfile({ user, onUpdate }) {
             </Button>
           </Box>
 
-          {profile.specialization || profile.city ? (
+          {(profile.specialization && profile.specialization.trim()) ? (
             <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>🏥 Specialization:</strong> {profile.specialization}
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>📅 Experience:</strong> {profile.experience} years
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>💰 Consultation Fee:</strong> ₹{profile.consultationFee}
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>🎓 Qualification:</strong> {profile.qualification}
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>📱 Phone:</strong> {profile.phone}
-              </Typography>
+              {profile.specialization && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>🏥 Specialization:</strong> {profile.specialization}
+                </Typography>
+              )}
+              {profile.experience && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>📅 Experience:</strong> {profile.experience} years
+                </Typography>
+              )}
+              {profile.consultationFee && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>💰 Consultation Fee:</strong> ₹{profile.consultationFee}
+                </Typography>
+              )}
+              {profile.qualification && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>🎓 Qualification:</strong> {profile.qualification}
+                </Typography>
+              )}
+              {profile.phone && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>📱 Phone:</strong> {profile.phone}
+                </Typography>
+              )}
               <Typography variant="body1" color="success.contrastText">
                 <strong>⭐ Rating:</strong> {getRating()}/5.0 {getAdminBoost() > 0 && `(+${getAdminBoost()} Admin Boost)`}
               </Typography>
@@ -138,7 +165,7 @@ function DoctorProfile({ user, onUpdate }) {
               </Typography>
               {(profile.flatNo || profile.street || profile.city || profile.state) && (
                 <Typography variant="body1" color="success.contrastText">
-                  <strong>🏠 Clinic Address:</strong> {profile.flatNo} {profile.street}, {profile.city}, {profile.state}
+                  <strong>🏠 Clinic Address:</strong> {[profile.flatNo, profile.street, profile.city, profile.state].filter(Boolean).join(', ')}
                 </Typography>
               )}
             </Box>
