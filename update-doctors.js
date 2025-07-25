@@ -29,22 +29,26 @@ const realDoctors = [
   }
 ];
 
-async function addRealDoctors() {
+async function updateDoctors() {
   try {
     console.log('🔗 Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
+    // Remove all existing doctors
+    console.log('🗑️ Removing all existing doctors...');
+    const existingDoctors = await Doctor.find().populate('userId');
+    for (const doctor of existingDoctors) {
+      if (doctor.userId) {
+        await User.findByIdAndDelete(doctor.userId._id);
+      }
+      await Doctor.findByIdAndDelete(doctor._id);
+    }
+    console.log('✅ Removed all existing doctors');
+
     console.log('🏥 Adding real doctors...');
     
     for (const doctorData of realDoctors) {
-      // Check if doctor already exists
-      const existingUser = await User.findOne({ email: doctorData.email });
-      if (existingUser) {
-        console.log(`⚠️  Doctor ${doctorData.name} already exists, skipping...`);
-        continue;
-      }
-
       // Create user account
       const hashedPassword = await bcrypt.hash('doctor123', 10);
       const user = new User({
@@ -65,10 +69,10 @@ async function addRealDoctors() {
         qualification: doctorData.qualification,
         location: doctorData.location,
         about: doctorData.about,
-        rating: Math.random() * 1.5 + 3.5, // Random rating between 3.5-5.0
-        totalRatings: Math.floor(Math.random() * 200) + 50,
+        rating: 4.5,
+        totalRatings: 25,
         availability: {
-          isAvailable: Math.random() > 0.3, // 70% chance of being available
+          isAvailable: true,
           schedule: {
             monday: { isAvailable: true, slots: ['09:00-17:00'] },
             tuesday: { isAvailable: true, slots: ['09:00-17:00'] },
@@ -80,19 +84,19 @@ async function addRealDoctors() {
           }
         },
         isVerified: true,
-        isFeatured: Math.random() > 0.7, // 30% chance of being featured
+        isFeatured: true,
         adminBoostRating: 0
       });
       await doctor.save();
 
-      console.log(`✅ Added Dr. ${doctorData.name} - ${doctorData.specialization}`);
+      console.log(`✅ Added ${doctorData.name} - ${doctorData.specialization}`);
     }
 
-    console.log(`🎉 Successfully added ${realDoctors.length} real doctors!`);
-    console.log('📋 All doctors have default password: doctor123');
+    console.log(`🎉 Successfully updated doctors! Now only ${realDoctors.length} real doctors remain.`);
+    console.log('📋 All doctors have password: doctor123');
     
   } catch (error) {
-    console.error('❌ Error adding doctors:', error);
+    console.error('❌ Error updating doctors:', error);
   } finally {
     await mongoose.disconnect();
     console.log('🔌 Disconnected from MongoDB');
@@ -100,4 +104,4 @@ async function addRealDoctors() {
 }
 
 // Run the script
-addRealDoctors();
+updateDoctors();
