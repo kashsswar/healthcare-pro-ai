@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import io from 'socket.io-client';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -16,6 +17,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import MarketingWidget from './pages/MarketingWidget';
 import EmbedWidget from './pages/EmbedWidget';
+import ContactUs from './pages/ContactUs';
+import ShippingPolicy from './pages/ShippingPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import CancellationRefund from './pages/CancellationRefund';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import VoiceAssistant from './components/VoiceAssistant';
 import VisualHealthAlerts from './components/VisualHealthAlerts';
 import AccessibilityPanel from './components/AccessibilityPanel';
@@ -136,16 +142,22 @@ function App() {
               path="/embed" 
               element={<EmbedWidget />} 
             />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/cancellation-refund" element={<CancellationRefund />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           </Routes>
           
           {user && (
             <>
               <VoiceAssistant />
-              {user.role !== 'doctor' && <VisualHealthAlerts />}
+              {user.role !== 'doctor' && user.role !== 'Doctor' && !user.specialization && <VisualHealthAlerts />}
               <AccessibilityPanel />
             </>
           )}
+          <Footer />
           </div>
         </Router>
       </ThemeProvider>
