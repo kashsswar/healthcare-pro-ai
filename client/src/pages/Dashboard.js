@@ -17,6 +17,8 @@ import DoctorProfile from '../components/DoctorProfile';
 import PatientReview from '../components/PatientReview';
 import DoctorsByLocation from '../components/DoctorsByLocation';
 import LocalDoctorsList from '../components/LocalDoctorsList';
+import BankDetails from '../components/BankDetails';
+import PatientBankDetails from '../components/PatientBankDetails';
 
 
 function Dashboard({ user, socket }) {
@@ -25,6 +27,8 @@ function Dashboard({ user, socket }) {
   const [queueUpdates, setQueueUpdates] = useState({});
   const [activeTab, setActiveTab] = useState(0);
   const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
+  const [bankDialog, setBankDialog] = useState(false);
+  const [patientBankDialog, setPatientBankDialog] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -190,6 +194,12 @@ function Dashboard({ user, socket }) {
     console.log('Admin boost found:', boost);
     return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
   };
+  
+  const getCurrentConsultationFee = () => {
+    const doctorId = user._id || user.id;
+    const doctorProfile = JSON.parse(localStorage.getItem(`doctor_${doctorId}_profile`) || '{}');
+    return parseInt(doctorProfile.consultationFee) || 500;
+  };
 
   const loadDashboardData = React.useCallback(async () => {
     try {
@@ -299,7 +309,7 @@ function Dashboard({ user, socket }) {
       window.dispatchEvent(new Event('storage'));
       
       // Simulate refund notification
-      alert('Appointment cancelled successfully! ₹500 has been refunded to your account. It will reflect in 2-3 business days.');
+      alert('Appointment cancelled successfully! Booking amount has been refunded to your account. It will reflect in 2-3 business days.');
       
       // Reload dashboard data
       loadDashboardData();
@@ -425,7 +435,7 @@ function Dashboard({ user, socket }) {
                     <Typography variant="body2">Net Earnings</Typography>
                   </Grid>
                   <Grid item xs={6} md={3}>
-                    <Typography variant="h5" color="info.main">₹{JSON.parse(localStorage.getItem(`doctor_${user._id || user.id}_profile`) || '{}').consultationFee || 500}</Typography>
+                    <Typography variant="h5" color="info.main">₹{getCurrentConsultationFee()}</Typography>
                     <Typography variant="body2">Current Fee/Patient</Typography>
                   </Grid>
                 </Grid>
@@ -447,7 +457,31 @@ function Dashboard({ user, socket }) {
             </Card>
           </Grid>
           
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  💳 Bank Account
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setBankDialog(true)}
+                  fullWidth
+                >
+                  Setup Bank Details
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+          
         </Grid>
+        
+        {/* Doctor Bank Details Dialog */}
+        <BankDetails
+          open={bankDialog}
+          onClose={() => setBankDialog(false)}
+          doctor={user}
+        />
       </Container>
     );
   }
@@ -525,6 +559,13 @@ function Dashboard({ user, socket }) {
                   fullWidth
                 >
                   {t('healthTips')}
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={() => setPatientBankDialog(true)}
+                  fullWidth
+                >
+                  💳 Payment Method
                 </Button>
               </Box>
             </CardContent>
@@ -650,6 +691,16 @@ function Dashboard({ user, socket }) {
         onReviewSubmit={(reviewData, newRating) => {
           console.log('Review submitted:', reviewData);
           loadDashboardData(); // Refresh data
+        }}
+      />
+      
+      {/* Patient Bank Details Dialog */}
+      <PatientBankDetails
+        open={patientBankDialog}
+        onClose={() => setPatientBankDialog(false)}
+        onSave={(bankInfo) => {
+          localStorage.setItem(`patient_${user.id}_bank`, JSON.stringify(bankInfo));
+          alert('Payment method saved successfully!');
         }}
       />
     </Container>

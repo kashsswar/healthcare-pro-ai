@@ -142,7 +142,7 @@ function App() {
           {user && (
             <>
               <VoiceAssistant />
-              <VisualHealthAlerts />
+              {user.role !== 'doctor' && <VisualHealthAlerts />}
               <AccessibilityPanel />
             </>
           )}
