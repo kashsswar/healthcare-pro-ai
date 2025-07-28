@@ -70,17 +70,40 @@ function Dashboard({ user, socket }) {
     }).length;
   };
   
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  
+  const loadTodayAppointments = async () => {
+    try {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}/today`);
+      
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const appointments = await response.json();
+          setTodayAppointments(appointments);
+          console.log('Today appointments loaded:', appointments);
+        } else {
+          console.log('API returned non-JSON response');
+          setTodayAppointments([]);
+        }
+      } else {
+        console.log('API response not ok');
+        setTodayAppointments([]);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      setTodayAppointments([]);
+    }
+  };
+  
   const getTodayQueue = () => {
-    const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-    const doctorId = user._id || user.id;
-    const today = new Date().toDateString();
-    
-    return bookedAppointments.filter(apt => {
-      const aptDate = new Date(apt.scheduledTime).toDateString();
-      return (apt.doctorId === doctorId || apt.doctor === doctorId) && 
-             aptDate === today && 
-             (apt.status === 'scheduled' || apt.status === 'in-progress');
-    });
+    return todayAppointments.filter(apt => 
+      apt.status === 'scheduled' || apt.status === 'in-progress'
+    );
   };
   
   const getCompletedAppointments = () => {
@@ -174,35 +197,48 @@ function Dashboard({ user, socket }) {
     return Math.min(5.0, avgRating + adminBoost).toFixed(1);
   };
   
-  const getAdminBoost = () => {
-    const doctorId = user._id || user.id;
-    
-    // Check multiple possible localStorage keys for admin boosts
-    const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
-    const doctorBoosts = JSON.parse(localStorage.getItem('doctorBoosts') || '[]');
-    const ratingBoosts = JSON.parse(localStorage.getItem('ratingBoosts') || '[]');
-    
-    // Check all possible boost sources
-    let boost = adminBoosts.find(b => b.doctorId === doctorId || b.doctor === doctorId);
-    if (!boost) boost = doctorBoosts.find(b => b.doctorId === doctorId || b.doctor === doctorId);
-    if (!boost) boost = ratingBoosts.find(b => b.doctorId === doctorId || b.doctor === doctorId);
-    
-    // Check direct doctor boost property
-    const doctorData = JSON.parse(localStorage.getItem(`doctor_${doctorId}`) || '{}');
-    if (doctorData.adminBoostRating) {
-      return doctorData.adminBoostRating;
+  const [adminBoost, setAdminBoost] = useState(0);
+  
+  const loadAdminBoost = async () => {
+    try {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/admin-boost/doctor/${userId}`);
+      
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          setAdminBoost(data.adminBoostRating || 0);
+        } else {
+          console.log('Non-JSON response, setting boost to 0');
+          setAdminBoost(0);
+        }
+      } else {
+        console.log('API response not ok, setting boost to 0');
+        setAdminBoost(0);
+      }
+    } catch (error) {
+      console.error('Error loading admin boost:', error);
+      setAdminBoost(0);
     }
-    
-    console.log('Admin boost found:', boost);
-    return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
+  };
+  
+  const getAdminBoost = () => {
+    return adminBoost;
   };
   
   const [consultationFee, setConsultationFee] = useState(null);
   
   const loadDoctorProfile = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`);
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/doctor-profile/${userId}`);
       if (response.ok) {
         const doctorData = await response.json();
         setConsultationFee(doctorData.consultationFee || null);
@@ -216,30 +252,32 @@ function Dashboard({ user, socket }) {
     return consultationFee;
   };
 
-  const loadDashboardData = React.useCallback(() => {
+  const loadDashboardData = React.useCallback(async () => {
     try {
-      // Load appointments from localStorage
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const userAppointments = bookedAppointments.filter(apt => {
-        return apt.patient?.email === user.email || 
-               apt.patientId === user.id || 
-               apt.patientId === user._id;
-      });
+      const userId = user._id || user.id;
+      if (!userId) return;
       
-      // Ensure appointments have proper status
-      const processedAppointments = userAppointments.map(apt => ({
-        ...apt,
-        status: apt.status || 'scheduled',
-        doctorName: apt.doctorName || apt.doctor?.userId?.name || apt.doctor?.name || getDoctorNameById(apt.doctorId) || 'Doctor'
-      }));
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/patient/${userId}`);
       
-      setAppointments(processedAppointments);
+      if (response.ok) {
+        const appointments = await response.json();
+        const processedAppointments = appointments.map(apt => ({
+          ...apt,
+          status: apt.status || 'scheduled',
+          doctorName: apt.doctor?.name || apt.doctorName || 'Doctor'
+        }));
+        
+        setAppointments(processedAppointments);
+      } else {
+        setAppointments([]);
+      }
       
     } catch (error) {
       console.error('Dashboard load error:', error);
       setAppointments([]);
     }
-  }, [user.id, user.email]);
+  }, [user.id, user._id]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
@@ -247,6 +285,8 @@ function Dashboard({ user, socket }) {
     loadDashboardData();
     if (user.role === 'doctor') {
       loadDoctorProfile();
+      loadAdminBoost();
+      loadTodayAppointments();
     }
     // Reset to main dashboard tab when component mounts
     setActiveTab(0);
@@ -265,8 +305,16 @@ function Dashboard({ user, socket }) {
     window.addEventListener('appointmentUpdated', handleRefresh);
     window.addEventListener('storage', handleRefresh);
     
-    // Periodic auto-refresh every 30 seconds
-    const autoRefreshInterval = setInterval(handleRefresh, 30000);
+    // Refresh appointments when new ones are booked
+    const handleAppointmentRefresh = () => {
+      if (user.role === 'doctor') {
+        loadTodayAppointments();
+      }
+    };
+    window.addEventListener('appointmentUpdated', handleAppointmentRefresh);
+    
+    // Periodic auto-refresh every 5 minutes
+    const autoRefreshInterval = setInterval(handleRefresh, 300000);
     
     return () => {
       window.removeEventListener('doctorProfileUpdated', handleRefresh);
@@ -274,6 +322,7 @@ function Dashboard({ user, socket }) {
       window.removeEventListener('adminRatingUpdated', handleRefresh);
       window.removeEventListener('appointmentUpdated', handleRefresh);
       window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('appointmentUpdated', handleAppointmentRefresh);
       clearInterval(autoRefreshInterval);
     };
   }, [loadDashboardData]);
@@ -339,20 +388,10 @@ function Dashboard({ user, socket }) {
     const isUpcoming = appointmentTime > now;
     const isScheduled = apt.status === 'scheduled' || apt.status === 'pending';
     
-    console.log('Filtering appointment:', {
-      status: apt.status,
-      scheduledTime: apt.scheduledTime,
-      appointmentTime: appointmentTime.toLocaleString(),
-      now: now.toLocaleString(),
-      isUpcoming,
-      isScheduled,
-      willShow: isUpcoming && isScheduled
-    });
-    
     return isUpcoming && isScheduled;
   });
   
-  console.log('Upcoming appointments:', upcomingAppointments.length);
+  console.log('Upcoming appointments for today:', upcomingAppointments.length);
 
   if (user.role === 'doctor') {
     return (
@@ -388,8 +427,8 @@ function Dashboard({ user, socket }) {
               getTodayQueue().map((appointment) => (
                 <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'grey.50' }}>
                   <CardContent>
-                    <Typography variant="h6">{appointment.patient?.name || 'Patient'}</Typography>
-                    <Typography variant="body2">📧 {appointment.patient?.email || 'No email'} | 📱 {appointment.patient?.phone || 'No phone'}</Typography>
+                    <Typography variant="h6">{appointment.patientId?.name || appointment.patient?.name || 'Patient'}</Typography>
+                    <Typography variant="body2">📧 {appointment.patientId?.email || appointment.patient?.email || 'No email'} | 📱 {appointment.patientId?.phone || appointment.patient?.phone || 'No phone'}</Typography>
                     <Chip 
                       label={appointment.status?.toUpperCase() || 'SCHEDULED'} 
                       color={appointment.status === 'in-progress' ? 'warning' : 'primary'}

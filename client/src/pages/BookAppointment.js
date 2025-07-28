@@ -124,39 +124,35 @@ function BookAppointment({ user }) {
         });
       }
       
-      // Save to localStorage for doctor to see
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const newAppointment = {
-        _id: Date.now().toString(),
-        patient: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          profile: user.profile || {}
-        },
-        patientId: user._id || user.id,
-        doctor: {
-          _id: appointmentData.doctorId,
-          userId: { name: doctor.userId?.name || 'Doctor' },
-          name: doctor.userId?.name || 'Doctor',
-          specialization: doctor.specialization
-        },
-        doctorId: appointmentData.doctorId,
-        doctorName: doctor.userId?.name || 'Doctor',
-        scheduledTime: `${appointmentData.appointmentDate}T${appointmentData.appointmentTime}`,
-        appointmentDate: appointmentData.appointmentDate,
-        appointmentTime: appointmentData.appointmentTime,
-        symptoms: appointmentData.symptoms.split(',').map(s => s.trim()),
-        status: 'scheduled',
-        createdAt: new Date().toISOString(),
-        paymentId: paymentData?.paymentId,
-        consultationFee: doctor.consultationFee,
-        paymentStatus: 'paid'
-      };
+      // Save appointment to database via API
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const apiResponse = await fetch(`${apiUrl}/api/book-appointment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: user._id || user.id,
+          doctorId: appointmentData.doctorId,
+          scheduledTime: `${appointmentData.appointmentDate}T${appointmentData.appointmentTime}`,
+          symptoms: appointmentData.symptoms.split(',').map(s => s.trim()),
+          consultationFee: doctor.consultationFee,
+          patient: {
+            name: user.name,
+            email: user.email,
+            phone: user.phone
+          },
+          doctor: {
+            name: doctor.userId?.name || 'Doctor',
+            specialization: doctor.specialization
+          }
+        })
+      });
       
-      bookedAppointments.push(newAppointment);
-      localStorage.setItem('bookedAppointments', JSON.stringify(bookedAppointments));
-      console.log('Saved appointment to localStorage:', newAppointment);
+      if (!apiResponse.ok) {
+        throw new Error('Failed to save appointment to database');
+      }
+      
+      const savedAppointment = await apiResponse.json();
+      console.log('Saved appointment to database:', savedAppointment);
       
       alert('Appointment booked successfully!');
       navigate('/dashboard');

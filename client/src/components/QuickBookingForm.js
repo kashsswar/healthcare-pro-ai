@@ -24,46 +24,51 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
 
     setSubmitting(true);
     try {
+      console.log('Doctor object:', doctor);
+      console.log('Patient object:', patient);
+      
       const appointmentData = {
-        _id: `apt_${Date.now()}`,
+        patientId: patient._id || patient.id,
+        doctorId: doctor._id || doctor.userId?._id,
+        scheduledTime: new Date(`${selectedDate}T${selectedTime}`).toISOString(),
+        symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
+        consultationFee: doctor.consultationFee,
         patient: {
           name: patient.name,
           email: patient.email,
           phone: patient.phone || '1234567890'
         },
-        patientId: patient.id,
         doctor: {
-          _id: doctor._id,
-          userId: { name: doctor.userId.name },
           name: doctor.userId.name,
           specialization: doctor.specialization
         },
-        doctorId: doctor._id,
-        doctorName: `Dr. ${doctor.userId.name}`,
-        scheduledTime: new Date(`${selectedDate}T${selectedTime}`).toISOString(),
-        appointmentDate: selectedDate,
-        appointmentTime: selectedTime,
-        symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
-        status: 'scheduled',
-        consultationFee: doctor.consultationFee,
-        createdAt: new Date().toISOString()
+        status: 'scheduled'
       };
+      
 
-      // Save to localStorage
-      const existingAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      existingAppointments.push(appointmentData);
-      localStorage.setItem('bookedAppointments', JSON.stringify(existingAppointments));
+
+      // Save to API database only
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiResponse = await fetch(`${apiUrl}/api/book-appointment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appointmentData)
+      });
+      
+      if (!apiResponse.ok) {
+        throw new Error('Failed to save appointment to database');
+      }
+      
+      const savedAppointment = await apiResponse.json();
+      console.log('Appointment saved to database:', savedAppointment);
 
       // Dispatch auto-refresh events
       window.dispatchEvent(new CustomEvent('appointmentUpdated', { 
-        detail: { type: 'booked', appointment: appointmentData } 
+        detail: { type: 'booked', appointment: savedAppointment } 
       }));
-      window.dispatchEvent(new Event('storage'));
-
-      console.log('Appointment saved and events dispatched:', appointmentData);
       
       if (onBookingConfirm) {
-        onBookingConfirm(appointmentData);
+        onBookingConfirm(savedAppointment);
       }
 
       alert(`Appointment booked successfully with Dr. ${doctor.userId.name} on ${selectedDate} at ${selectedTime}`);

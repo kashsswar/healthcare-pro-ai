@@ -25,18 +25,33 @@ function DoctorLocationManager({ user }) {
 
   const loadLocation = async () => {
     try {
-      // Try to load from localStorage first
-      const savedLocation = localStorage.getItem(`doctor_${user.doctorId || user._id}_location`);
-      if (savedLocation) {
-        const locationData = JSON.parse(savedLocation);
-        setLocation(locationData);
-        setHasLocation(locationData.address && locationData.city);
-      }
+      const userId = user.doctorId || user._id || user.id;
+      if (!userId) return;
       
-      // Skip API call - use only localStorage
-      console.log('Using localStorage for location data');
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/doctor-location/${userId}`);
+      
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          const locationData = {
+            address: data.location.address || '',
+            city: data.location.city || '',
+            state: data.location.state || '',
+            pincode: '',
+            landmark: ''
+          };
+          setLocation(locationData);
+          setHasLocation(locationData.address && locationData.city);
+        } else {
+          console.log('Location API returned non-JSON response');
+        }
+      } else {
+        console.log('Location API response not ok');
+      }
     } catch (error) {
-      console.log('Using default location settings');
+      console.log('Error loading location:', error);
     }
   };
 
@@ -44,18 +59,31 @@ function DoctorLocationManager({ user }) {
     try {
       setSaving(true);
       
-      // Save to localStorage
-      localStorage.setItem(`doctor_${user.doctorId || user._id}_location`, JSON.stringify(location));
+      const userId = user.doctorId || user._id || user.id;
+      if (!userId) return;
       
-      // Skip API save - use only localStorage
-      console.log('Location saved to localStorage only');
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/doctor-location/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city: location.city,
+          state: location.state,
+          address: location.address
+        })
+      });
       
-      setMessage('Location saved successfully! Patients can now find you by location.');
-      setHasLocation(true);
-      setIsEditing(false);
-      setTimeout(() => setMessage(''), 3000);
+      if (response.ok) {
+        setMessage('Location saved successfully! Patients can now find you by location.');
+        setHasLocation(true);
+        setIsEditing(false);
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Failed to save location. Please try again.');
+      }
       
     } catch (error) {
+      console.error('Error saving location:', error);
       setMessage('Failed to save location. Please try again.');
     } finally {
       setSaving(false);

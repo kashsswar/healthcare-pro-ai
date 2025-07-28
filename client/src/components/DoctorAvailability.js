@@ -23,7 +23,7 @@ function DoctorAvailability({ doctor }) {
 
   const handleSave = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/doctors/availability`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/doctors/availability`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

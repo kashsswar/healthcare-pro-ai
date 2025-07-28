@@ -15,18 +15,29 @@ function AppointmentQueue({ user, socket }) {
 
   const loadQueue = React.useCallback(async () => {
     try {
-      // Use localStorage instead of API
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const doctorQueue = bookedAppointments.filter(apt => 
-        (apt.doctorId === doctorId || apt.doctor === doctorId) && 
-        apt.status === 'scheduled'
-      ).map((apt, index) => ({
-        ...apt,
-        estimatedWaitTime: (index + 1) * 15 // 15 minutes per appointment
-      }));
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${doctorId}`);
       
-      setQueue(doctorQueue);
-      console.log('Queue loaded from localStorage:', doctorQueue);
+      if (response.ok) {
+        const appointments = await response.json();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const doctorQueue = appointments.filter(apt => {
+          const aptDate = new Date(apt.scheduledTime);
+          return apt.status === 'scheduled' && aptDate >= today && aptDate < tomorrow;
+        }).map((apt, index) => ({
+          ...apt,
+          estimatedWaitTime: (index + 1) * 15 // 15 minutes per appointment
+        }));
+        
+        setQueue(doctorQueue);
+        console.log('Queue loaded from API:', doctorQueue);
+      } else {
+        setQueue([]);
+      }
     } catch (error) {
       console.error('Queue load error:', error);
       setQueue([]);
@@ -47,13 +58,14 @@ function AppointmentQueue({ user, socket }) {
 
   const startConsultation = async (appointmentId) => {
     try {
-      // Update localStorage instead of API
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const updatedAppointments = bookedAppointments.map(apt => 
-        apt._id === appointmentId ? { ...apt, status: 'in-progress' } : apt
-      );
-      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
-      loadQueue();
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}/start`, {
+        method: 'PATCH'
+      });
+      
+      if (response.ok) {
+        loadQueue();
+      }
     } catch (error) {
       console.error('Start consultation error:', error);
     }
@@ -61,18 +73,19 @@ function AppointmentQueue({ user, socket }) {
 
   const completeConsultation = async (appointmentId) => {
     try {
-      // Update localStorage instead of API
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const updatedAppointments = bookedAppointments.map(apt => 
-        apt._id === appointmentId ? { 
-          ...apt, 
-          status: 'completed',
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}/complete`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           diagnosis: 'Consultation completed',
           completedAt: new Date().toISOString()
-        } : apt
-      );
-      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
-      loadQueue();
+        })
+      });
+      
+      if (response.ok) {
+        loadQueue();
+      }
     } catch (error) {
       console.error('Complete consultation error:', error);
     }
@@ -83,16 +96,16 @@ function AppointmentQueue({ user, socket }) {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom>Appointment Queue</Typography>
+        <Typography variant="h4" gutterBottom>Today's Appointment Queue</Typography>
         
         {queue.length === 0 ? (
-          <Typography color="textSecondary">No appointments in queue</Typography>
+          <Typography color="textSecondary">No appointments scheduled for today</Typography>
         ) : (
           <List>
             {queue.map((appointment, index) => (
               <ListItem key={appointment._id} divider>
                 <ListItemText
-                  primary={`${index + 1}. ${appointment.patient?.name}`}
+                  primary={`${index + 1}. ${appointment.patientId?.name || appointment.patient?.name || 'Patient'}`}
                   secondary={
                     <Box>
                       <Typography variant="body2">

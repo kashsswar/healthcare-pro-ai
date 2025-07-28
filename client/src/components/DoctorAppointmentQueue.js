@@ -18,48 +18,65 @@ function DoctorAppointmentQueue({ user, socket }) {
         loadAppointments();
       });
     }
+    
+    // Listen for appointment updates
+    const handleAppointmentUpdate = () => {
+      console.log('Appointment updated, refreshing queue...');
+      loadAppointments();
+    };
+    
+    window.addEventListener('appointmentUpdated', handleAppointmentUpdate);
+    
+    return () => {
+      window.removeEventListener('appointmentUpdated', handleAppointmentUpdate);
+    };
   }, [socket]);
 
   const loadAppointments = async () => {
     try {
       setLoading(true);
       
-      // Try multiple endpoints to find appointments
-      let appointments = [];
       const doctorId = user.doctorId || user._id || user.id;
+      console.log('Loading appointments for doctor:', doctorId);
       
-      console.log('Doctor user object:', user);
-      console.log('Using doctor ID:', doctorId);
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${doctorId}`);
       
-      // Check localStorage for booked appointments first
-      const localAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      console.log('All local appointments:', localAppointments);
-      console.log('Looking for doctor ID:', doctorId);
-      
-      // Fix the doctor ID mismatch by updating the appointment
-      const updatedAppointments = localAppointments.map(apt => {
-        if (apt.doctorId === '687ddecb768e37aa5629da87') {
-          return { ...apt, doctorId: doctorId, doctor: doctorId };
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const appointments = await response.json();
+          // Show recent appointments (last 7 days and future)
+          const recentAppointments = appointments.filter(apt => {
+            const aptDate = new Date(apt.scheduledTime);
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return aptDate >= weekAgo;
+          });
+          // Debug patient data
+          recentAppointments.forEach((apt, index) => {
+            console.log(`Appointment ${index}:`, {
+              patientId: apt.patientId,
+              patient: apt.patient,
+              patientIdName: apt.patientId?.name,
+              patientName: apt.patient?.name,
+              patientProfile: apt.patient?.profile,
+              patientAge: apt.patient?.profile?.age,
+              patientGender: apt.patient?.profile?.gender,
+              fullPatientObject: apt.patient
+            });
+          });
+          
+          setAppointments(recentAppointments);
+          console.log('Doctor appointments loaded from API:', recentAppointments);
+        } else {
+          console.log('API returned non-JSON, no appointments found');
+          setAppointments([]);
         }
-        return apt;
-      });
-      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
-      
-      const doctorLocalAppointments = updatedAppointments.filter(apt => {
-        console.log('Checking appointment doctor:', apt.doctorId, apt.doctor);
-        console.log('Current doctor ID:', doctorId);
-        return apt.doctorId === doctorId || apt.doctor === doctorId;
-      });
-      
-      console.log('Filtered appointments for doctor:', doctorId, doctorLocalAppointments);
-      
-      // Use only localStorage appointments - no API fallback
-      appointments = doctorLocalAppointments;
-      console.log('Final appointments for doctor:', doctorId, appointments);
-      
-      // Show all appointments for this doctor (remove date filtering for debugging)
-      setAppointments(appointments);
-      console.log('Doctor appointments loaded:', appointments);
+      } else {
+        console.log('API response not ok, no appointments found');
+        setAppointments([]);
+      }
       
     } catch (error) {
       console.error('Failed to load appointments:', error);
@@ -164,7 +181,7 @@ function DoctorAppointmentQueue({ user, socket }) {
                       {appointment.patient?.name || 'Patient Name'}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      📧 {appointment.patient?.email} | 📱 {appointment.patient?.phone}
+                      📧 {appointment.patient?.email || 'No email'} | 📱 {appointment.patient?.phone || 'No phone'}
                     </Typography>
                   </Box>
                   <Chip 

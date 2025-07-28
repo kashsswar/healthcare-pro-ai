@@ -16,7 +16,7 @@ function DoctorList({ user }) {
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [symptoms, setSymptoms] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [shareDoctor, setShareDoctor] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -27,7 +27,7 @@ function DoctorList({ user }) {
   const { t } = useLanguage();
 
   useEffect(() => {
-    loadDoctors();
+    loadDoctors(selectedCategory);
     
     // Auto-refresh when profiles change
     const handleRefresh = () => {
@@ -47,17 +47,25 @@ function DoctorList({ user }) {
     };
   }, [selectedCategory]);
 
+
+  
   const filterDoctors = React.useCallback(() => {
     if (!searchTerm) {
       setFilteredDoctors(doctors);
       return;
     }
 
-    const filtered = doctors.filter(doctor => 
-      doctor.userId?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.location?.city?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = doctors.filter(doctor => {
+      const doctorName = doctor.userId?.name || '';
+      const specialization = doctor.specialization || '';
+      const city = doctor.location?.city || '';
+      
+      return doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             city.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+    
+    console.log(`Filtered ${filtered.length} doctors from ${doctors.length} total`);
     setFilteredDoctors(filtered);
   }, [searchTerm, doctors]);
 
@@ -68,22 +76,30 @@ function DoctorList({ user }) {
   const loadDoctors = async (category = null) => {
     try {
       setLoading(true);
+      console.log('Loading doctors for category:', category);
       
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const apiUrl = process.env.REACT_APP_API_URL;
       let url = `${apiUrl}/api/doctors`;
       if (category) {
         url += `?specialization=${encodeURIComponent(category)}`;
       }
       
+      console.log('Fetching from URL:', url);
       const response = await fetch(url);
-      const data = await response.json();
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
       console.log('API response:', data);
       
       if (Array.isArray(data)) {
         setDoctors(data);
         setFilteredDoctors(data);
+        console.log(`Loaded ${data.length} doctors`);
       } else {
+        console.error('API did not return array:', data);
         setDoctors([]);
         setFilteredDoctors([]);
       }
@@ -97,70 +113,34 @@ function DoctorList({ user }) {
   };
 
   const handleAISearch = async () => {
-    if (!symptoms.trim()) return;
+    if (!searchTerm.trim()) return;
     
     try {
       setLoading(true);
       
-      // AI-based symptom to specialization mapping
-      const symptomSpecializationMap = {
-        'fever': ['General Medicine', 'Pediatrics'],
-        'headache': ['General Medicine', 'Neurology'],
-        'chest pain': ['Cardiology', 'General Medicine'],
-        'skin': ['Dermatology'],
-        'rash': ['Dermatology'],
-        'heart': ['Cardiology'],
-        'stomach': ['General Medicine', 'Gastroenterology'],
-        'eye': ['Ophthalmology'],
-        'ear': ['ENT'],
-        'throat': ['ENT'],
-        'bone': ['Orthopedics'],
-        'joint': ['Orthopedics'],
-        'child': ['Pediatrics'],
-        'pregnancy': ['Gynecology'],
-        'mental': ['Psychiatry'],
-        'depression': ['Psychiatry'],
-        'anxiety': ['Psychiatry']
-      };
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const url = `${apiUrl}/api/ai-search/search?query=${encodeURIComponent(searchTerm)}`;
       
-      // Find relevant specializations based on symptoms
-      const symptomsLower = symptoms.toLowerCase();
-      let relevantSpecializations = [];
+      console.log('AI Search URL:', url);
+      const response = await fetch(url);
       
-      Object.keys(symptomSpecializationMap).forEach(symptom => {
-        if (symptomsLower.includes(symptom)) {
-          relevantSpecializations.push(...symptomSpecializationMap[symptom]);
-        }
-      });
-      
-      // Remove duplicates
-      relevantSpecializations = [...new Set(relevantSpecializations)];
-      
-      // If no specific specialization found, default to General Medicine
-      if (relevantSpecializations.length === 0) {
-        relevantSpecializations = ['General Medicine'];
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Filter doctors by relevant specializations
-      const aiFilteredDoctors = doctors.filter(doctor => 
-        relevantSpecializations.includes(doctor.specialization)
-      ).map(doctor => ({
-        ...doctor,
-        aiMatch: {
-          matchScore: 0.8 + Math.random() * 0.2, // 80-100% match
-          reasoning: `Recommended for ${symptoms} based on specialization in ${doctor.specialization}`
-        }
-      }));
+      const data = await response.json();
+      console.log('AI Search response:', data);
       
-      // Sort by AI match score
-      aiFilteredDoctors.sort((a, b) => b.aiMatch.matchScore - a.aiMatch.matchScore);
-      
-      setFilteredDoctors(aiFilteredDoctors);
+      if (Array.isArray(data)) {
+        setFilteredDoctors(data);
+        console.log(`AI found ${data.length} matching doctors`);
+      } else {
+        setFilteredDoctors([]);
+      }
       
     } catch (error) {
       console.error('AI search error:', error);
-      // Fallback to regular search if AI fails
-      filterDoctors();
+      setFilteredDoctors([]);
     } finally {
       setLoading(false);
     }
@@ -174,20 +154,23 @@ function DoctorList({ user }) {
       
       <DoctorCategories 
         onCategorySelect={(category) => {
+          console.log('Category selected:', category);
           setSelectedCategory(category);
           loadDoctors(category);
         }}
         selectedCategory={selectedCategory}
       />
       
-      {/* Search and AI Filters */}
+      {/* AI Search */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={10}>
           <TextField
             fullWidth
-            placeholder={t('searchPlaceholder')}
+            placeholder="Search by doctor name, specialization, city"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAISearch()}
+            helperText="AI will understand if you're searching by name/location or describing symptoms"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -197,24 +180,15 @@ function DoctorList({ user }) {
             }}
           />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            placeholder={t('symptomsPlaceholder')}
-            value={symptoms}
-            onChange={(e) => setSymptoms(e.target.value)}
-            helperText={t('symptomsHelper')}
-          />
-        </Grid>
         <Grid item xs={12} md={2}>
           <Button 
             fullWidth 
             variant="contained" 
             onClick={handleAISearch}
-            disabled={!symptoms.trim() || loading}
+            disabled={!searchTerm.trim() || loading}
             sx={{ height: '56px' }}
           >
-{t('aiSearch')}
+            🤖 AI Search
           </Button>
         </Grid>
       </Grid>

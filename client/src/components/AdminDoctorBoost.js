@@ -40,7 +40,7 @@ function AdminDoctorBoost() {
 
   const loadDoctors = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/doctors`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/doctors`);
       const data = await response.json();
       setDoctors(data);
       setFilteredDoctors(data);
@@ -51,7 +51,7 @@ function AdminDoctorBoost() {
 
   const handleBoost = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/boost-doctor`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/boost-doctor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -83,7 +83,7 @@ function AdminDoctorBoost() {
 
   const toggleFirstPosition = async (doctorId, makeFirst) => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/set-first-position`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/admin/set-first-position`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

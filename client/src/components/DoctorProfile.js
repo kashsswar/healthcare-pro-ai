@@ -32,14 +32,20 @@ function DoctorProfile({ user, onUpdate }) {
   const [tempProfile, setTempProfile] = useState({});
 
   useEffect(() => {
-    loadProfile();
-    loadStats();
-  }, [user._id]);
+    const userId = user._id || user.id;
+    if (userId) {
+      loadProfile();
+      loadStats();
+    }
+  }, [user._id, user.id]);
   
   const loadProfile = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`);
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/doctor-profile/${userId}`);
       if (response.ok) {
         const doctorData = await response.json();
         setProfile({
@@ -47,7 +53,7 @@ function DoctorProfile({ user, onUpdate }) {
           experience: doctorData.experience?.toString() || '',
           consultationFee: doctorData.consultationFee?.toString() || '',
           qualification: doctorData.qualification?.join(', ') || '',
-          flatNo: '',
+          flatNo: doctorData.location?.address || '',
           street: '',
           city: doctorData.location?.city || '',
           state: doctorData.location?.state || '',
@@ -64,8 +70,11 @@ function DoctorProfile({ user, onUpdate }) {
   
   const loadStats = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/appointments/doctor/${user._id}/stats`);
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}/stats`);
       if (response.ok) {
         const stats = await response.json();
         setReviewCount(stats.reviewCount || 0);
@@ -85,14 +94,30 @@ function DoctorProfile({ user, onUpdate }) {
 
   const saveProfile = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`, {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL;
+      
+      // Save profile data
+      const profileResponse = await fetch(`${apiUrl}/api/doctor-profile/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tempProfile)
       });
       
-      if (response.ok) {
+      // Save location data separately
+      const locationResponse = await fetch(`${apiUrl}/api/doctor-location/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city: tempProfile.city,
+          state: tempProfile.state,
+          address: tempProfile.flatNo
+        })
+      });
+      
+      if (profileResponse.ok && locationResponse.ok) {
         setProfile(tempProfile);
         if (onUpdate) onUpdate(tempProfile);
         setEditOpen(false);

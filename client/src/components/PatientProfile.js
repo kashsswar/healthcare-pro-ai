@@ -20,13 +20,19 @@ function PatientProfile({ user, onUpdate }) {
   const [tempProfile, setTempProfile] = useState({});
 
   useEffect(() => {
-    loadProfile();
-  }, [user._id]);
+    const userId = user._id || user.id;
+    if (userId) {
+      loadProfile();
+    }
+  }, [user._id, user.id]);
   
   const loadProfile = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/patient-profile/${user._id}`);
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`);
       if (response.ok) {
         const patientData = await response.json();
         setProfile({
@@ -82,14 +88,25 @@ function PatientProfile({ user, onUpdate }) {
 
   const saveProfile = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/patient-profile/${user._id}`, {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tempProfile)
       });
       
       if (response.ok) {
+        console.log('Patient profile saved:', tempProfile);
+        console.log('Profile data being sent:', {
+          age: tempProfile.age,
+          gender: tempProfile.gender,
+          city: tempProfile.city,
+          state: tempProfile.state,
+          medicalHistory: tempProfile.medicalHistory
+        });
         setProfile(tempProfile);
         if (onUpdate) onUpdate(tempProfile);
         setEditOpen(false);
