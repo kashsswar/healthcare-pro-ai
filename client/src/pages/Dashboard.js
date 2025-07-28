@@ -197,25 +197,34 @@ function Dashboard({ user, socket }) {
     return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
   };
   
+  const [consultationFee, setConsultationFee] = useState(null);
+  
+  const loadDoctorProfile = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`);
+      if (response.ok) {
+        const doctorData = await response.json();
+        setConsultationFee(doctorData.consultationFee || null);
+      }
+    } catch (error) {
+      console.error('Error loading doctor profile:', error);
+    }
+  };
+  
   const getCurrentConsultationFee = () => {
-    const doctorId = user._id || user.id;
-    const doctorProfile = JSON.parse(localStorage.getItem(`doctor_${doctorId}_profile`) || '{}');
-    return parseInt(doctorProfile.consultationFee) || 500;
+    return consultationFee;
   };
 
-  const loadDashboardData = React.useCallback(async () => {
+  const loadDashboardData = React.useCallback(() => {
     try {
       // Load appointments from localStorage
       const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
       const userAppointments = bookedAppointments.filter(apt => {
-        console.log('Checking appointment for patient:', apt.patient?.email, apt.patientId);
-        console.log('Current user:', user.email, user.id, user._id);
         return apt.patient?.email === user.email || 
                apt.patientId === user.id || 
                apt.patientId === user._id;
       });
-      
-      console.log('User appointments found:', userAppointments.length);
       
       // Ensure appointments have proper status
       const processedAppointments = userAppointments.map(apt => ({
@@ -225,7 +234,6 @@ function Dashboard({ user, socket }) {
       }));
       
       setAppointments(processedAppointments);
-      console.log('Loaded appointments:', processedAppointments);
       
     } catch (error) {
       console.error('Dashboard load error:', error);
@@ -237,6 +245,9 @@ function Dashboard({ user, socket }) {
   
   useEffect(() => {
     loadDashboardData();
+    if (user.role === 'doctor') {
+      loadDoctorProfile();
+    }
     // Reset to main dashboard tab when component mounts
     setActiveTab(0);
     
@@ -440,7 +451,9 @@ function Dashboard({ user, socket }) {
                     <Typography variant="body2">Net Earnings</Typography>
                   </Grid>
                   <Grid item xs={6} md={3}>
-                    <Typography variant="h5" color="info.main">₹{getCurrentConsultationFee()}</Typography>
+                    <Typography variant="h5" color="info.main">
+                      {getCurrentConsultationFee() ? `₹${getCurrentConsultationFee()}` : 'Not Set'}
+                    </Typography>
                     <Typography variant="body2">Current Fee/Patient</Typography>
                   </Grid>
                 </Grid>

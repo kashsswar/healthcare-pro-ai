@@ -7,46 +7,15 @@ import { Person, Save, Edit } from '@mui/icons-material';
 
 function DoctorProfile({ user, onUpdate }) {
   
-  const getRating = () => {
-    const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
-    const doctorReviews = reviews.filter(review => review.doctorId === user._id);
-    
-    if (doctorReviews.length === 0) {
-      return '4.5';
-    }
-    
-    const avgRating = doctorReviews.reduce((sum, review) => sum + review.rating, 0) / doctorReviews.length;
-    const adminBoost = getAdminBoost();
-    
-    return Math.min(5.0, avgRating + adminBoost).toFixed(1);
-  };
+  const [rating, setRating] = useState('4.5');
+  const [adminBoost, setAdminBoost] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [patientCount, setPatientCount] = useState(0);
   
-  const getAdminBoost = () => {
-    const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
-    const doctorBoosts = JSON.parse(localStorage.getItem('doctorBoosts') || '[]');
-    const ratingBoosts = JSON.parse(localStorage.getItem('ratingBoosts') || '[]');
-    
-    let boost = adminBoosts.find(b => b.doctorId === user._id) || 
-               doctorBoosts.find(b => b.doctorId === user._id) || 
-               ratingBoosts.find(b => b.doctorId === user._id);
-    
-    return boost ? (boost.boostAmount || boost.rating || boost.boost || 0) : 0;
-  };
-  
-  const getReviewCount = () => {
-    const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
-    const doctorReviews = reviews.filter(review => review.doctorId === user._id);
-    return doctorReviews.length;
-  };
-  
-  const getPatientCount = () => {
-    const appointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-    const doctorAppointments = appointments.filter(apt => 
-      (apt.doctorId === user._id || apt.doctor === user._id) && 
-      apt.status === 'completed'
-    );
-    return doctorAppointments.length;
-  };
+  const getRating = () => rating;
+  const getAdminBoost = () => adminBoost;
+  const getReviewCount = () => reviewCount;
+  const getPatientCount = () => patientCount;
   const [profile, setProfile] = useState({
     specialization: user.specialization || '',
     experience: user.experience || '',
@@ -63,50 +32,78 @@ function DoctorProfile({ user, onUpdate }) {
   const [tempProfile, setTempProfile] = useState({});
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem(`doctor_${user._id}_profile`);
-    if (savedProfile) {
-      const parsedProfile = JSON.parse(savedProfile);
-      console.log('Loading doctor profile:', parsedProfile);
-      setProfile(parsedProfile);
-    } else {
-      console.log('No saved profile found for doctor:', user._id);
-      // Clear any existing profile data
-      setProfile({
-        specialization: '',
-        experience: '',
-        consultationFee: '',
-        qualification: '',
-        flatNo: '',
-        street: '',
-        city: '',
-        state: '',
-        phone: user.phone || '',
-        name: user.name || ''
-      });
-    }
+    loadProfile();
+    loadStats();
   }, [user._id]);
+  
+  const loadProfile = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`);
+      if (response.ok) {
+        const doctorData = await response.json();
+        setProfile({
+          specialization: doctorData.specialization || '',
+          experience: doctorData.experience?.toString() || '',
+          consultationFee: doctorData.consultationFee?.toString() || '',
+          qualification: doctorData.qualification?.join(', ') || '',
+          flatNo: '',
+          street: '',
+          city: doctorData.location?.city || '',
+          state: doctorData.location?.state || '',
+          phone: doctorData.userId?.phone || user.phone || '',
+          name: user.name || ''
+        });
+        setRating((doctorData.rating || 4.5).toFixed(1));
+        setAdminBoost(doctorData.adminBoostRating || 0);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+  
+  const loadStats = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${user._id}/stats`);
+      if (response.ok) {
+        const stats = await response.json();
+        setReviewCount(stats.reviewCount || 0);
+        setPatientCount(stats.completedAppointments || 0);
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+  
+
 
   const openEditDialog = () => {
     setTempProfile({ ...profile });
     setEditOpen(true);
   };
 
-  const saveProfile = () => {
-    setProfile(tempProfile);
-    localStorage.setItem(`doctor_${user._id}_profile`, JSON.stringify(tempProfile));
-    
-    // Trigger multiple events for other components to refresh
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new CustomEvent('doctorProfileUpdated', { 
-      detail: { doctorId: user._id, city: tempProfile.city } 
-    }));
-    
-    console.log('Doctor profile saved:', tempProfile);
-    console.log('Events dispatched for profile update');
-    
-    if (onUpdate) onUpdate(tempProfile);
-    setEditOpen(false);
-    alert('Doctor profile updated successfully! Patients can now find you in ' + tempProfile.city);
+  const saveProfile = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/doctor-profile/${user._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tempProfile)
+      });
+      
+      if (response.ok) {
+        setProfile(tempProfile);
+        if (onUpdate) onUpdate(tempProfile);
+        setEditOpen(false);
+        alert('Doctor profile updated successfully! Patients can now find you in ' + tempProfile.city);
+      } else {
+        alert('Failed to save profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
+    }
   };
 
   return (

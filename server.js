@@ -20,12 +20,21 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/doctor-commerce', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/doctors', require('./routes/doctors'));
+app.use('/api/doctor-profile', require('./routes/doctor-profile'));
+app.use('/api/patient-profile', require('./routes/patient-profile'));
 app.use('/api/appointments', require('./routes/appointments'));
+
+// Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working', timestamp: new Date() });
+});
 app.use('/api/appointments', require('./routes/appointment-confirm'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
@@ -68,7 +77,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);

@@ -317,4 +317,30 @@ router.post('/book-simple', async (req, res) => {
   }
 });
 
+// Get doctor statistics
+router.get('/doctor/:doctorId/stats', async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    
+    // Count completed appointments
+    const completedAppointments = await Appointment.countDocuments({
+      doctorId: doctorId,
+      status: 'completed'
+    });
+    
+    // Count reviews
+    const Review = require('../models/Review');
+    const reviewCount = await Review.countDocuments({
+      doctorId: doctorId
+    });
+    
+    res.json({
+      completedAppointments,
+      reviewCount
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

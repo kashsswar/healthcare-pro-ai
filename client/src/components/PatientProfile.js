@@ -20,11 +20,40 @@ function PatientProfile({ user, onUpdate }) {
   const [tempProfile, setTempProfile] = useState({});
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem(`patient_${user._id}_profile`);
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
+    loadProfile();
   }, [user._id]);
+  
+  const loadProfile = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/patient-profile/${user._id}`);
+      if (response.ok) {
+        const patientData = await response.json();
+        setProfile({
+          name: patientData.name || user.name || '',
+          phone: patientData.phone || user.phone || '',
+          age: patientData.profile?.age || '',
+          gender: patientData.profile?.gender || '',
+          city: patientData.profile?.city || '',
+          state: patientData.profile?.state || '',
+          medicalHistory: patientData.profile?.medicalHistory?.join(', ') || ''
+        });
+      } else {
+        // No profile exists yet
+        setProfile({
+          name: user.name || '',
+          phone: user.phone || '',
+          age: '',
+          gender: '',
+          city: '',
+          state: '',
+          medicalHistory: ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   const calculateAge = (dob) => {
     const today = new Date();
@@ -51,21 +80,27 @@ function PatientProfile({ user, onUpdate }) {
     setEditOpen(true);
   };
 
-  const saveProfile = () => {
-    setProfile(tempProfile);
-    localStorage.setItem(`patient_${user._id}_profile`, JSON.stringify(tempProfile));
-    
-    // Trigger auto-refresh events
-    window.dispatchEvent(new CustomEvent('patientProfileUpdated', { 
-      detail: { patientId: user._id, profile: tempProfile } 
-    }));
-    window.dispatchEvent(new Event('storage'));
-    
-    console.log('Patient profile saved and events dispatched');
-    
-    if (onUpdate) onUpdate(tempProfile);
-    setEditOpen(false);
-    alert('Profile updated successfully!');
+  const saveProfile = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/patient-profile/${user._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tempProfile)
+      });
+      
+      if (response.ok) {
+        setProfile(tempProfile);
+        if (onUpdate) onUpdate(tempProfile);
+        setEditOpen(false);
+        alert('Profile updated successfully!');
+      } else {
+        alert('Failed to save profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
+    }
   };
 
   const handleTempDOBChange = (dob) => {

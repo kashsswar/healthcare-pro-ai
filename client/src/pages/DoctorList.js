@@ -69,107 +69,23 @@ function DoctorList({ user }) {
     try {
       setLoading(true);
       
-      // Get real doctors from localStorage profiles
-      const realDoctors = [];
-      
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
-          try {
-            const doctorProfile = JSON.parse(localStorage.getItem(key));
-            const doctorId = key.replace('doctor_', '').replace('_profile', '');
-            
-            if (doctorProfile.city && doctorProfile.specialization) {
-              // Get admin rating boost
-              const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
-              const boost = adminBoosts.find(b => b.doctorId === doctorId) || { boostAmount: 0 };
-              
-              // Get reviews
-              const reviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
-              const doctorReviews = reviews.filter(r => r.doctorId === doctorId);
-              const avgRating = doctorReviews.length > 0 
-                ? doctorReviews.reduce((sum, r) => sum + r.rating, 0) / doctorReviews.length 
-                : 4.5;
-              
-              realDoctors.push({
-                _id: doctorId,
-                userId: { name: doctorProfile.name || 'Doctor' },
-                specialization: doctorProfile.specialization,
-                experience: parseInt(doctorProfile.experience) || 5,
-                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
-                rating: avgRating,
-                finalRating: Math.min(5.0, avgRating + (boost.boostAmount || 0)),
-                reviewCount: doctorReviews.length,
-                location: { 
-                  city: doctorProfile.city.trim(), 
-                  address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city}`.trim().replace(/^,\s*/, '')
-                },
-                avgConsultationTime: 30,
-                isVerified: true,
-                adminBoostRating: boost.boostAmount || 0
-              });
-            }
-          } catch (error) {
-            console.log('Error parsing doctor profile:', error);
-          }
-        }
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      let url = `${apiUrl}/api/doctors`;
+      if (category) {
+        url += `?specialization=${encodeURIComponent(category)}`;
       }
       
-      // Mock doctors as fallback
-      const mockDoctors = [
-        {
-          _id: 'mock1',
-          userId: { name: 'Rajesh Kumar' },
-          specialization: 'General Medicine',
-          experience: 10,
-          consultationFee: 500,
-          rating: 4.5,
-          finalRating: 4.5,
-          reviewCount: 25,
-          location: { city: 'Mumbai' },
-          avgConsultationTime: 30,
-          isVerified: true
-        },
-        {
-          _id: 'mock2',
-          userId: { name: 'Priya Sharma' },
-          specialization: 'Cardiology',
-          experience: 15,
-          consultationFee: 800,
-          rating: 4.8,
-          finalRating: 4.8,
-          reviewCount: 40,
-          location: { city: 'Mumbai' },
-          avgConsultationTime: 45,
-          isVerified: true
-        },
-        {
-          _id: 'mock3',
-          userId: { name: 'Amit Patel' },
-          specialization: 'Dermatology',
-          experience: 8,
-          consultationFee: 600,
-          rating: 4.3,
-          finalRating: 4.3,
-          reviewCount: 18,
-          location: { city: 'Delhi' },
-          avgConsultationTime: 25,
-          isVerified: true
-        }
-      ];
+      const response = await fetch(url);
+      const data = await response.json();
       
-      // Combine real and mock doctors
-      const data = [...realDoctors, ...mockDoctors];
+      console.log('API response:', data);
       
-      if (category) {
-        const filtered = data.filter(doctor => 
-          doctor.specialization === category
-        );
-        setDoctors(filtered);
-        setFilteredDoctors(filtered);
-      } else {
+      if (Array.isArray(data)) {
         setDoctors(data);
         setFilteredDoctors(data);
+      } else {
+        setDoctors([]);
+        setFilteredDoctors([]);
       }
     } catch (error) {
       console.error('Error loading doctors:', error);

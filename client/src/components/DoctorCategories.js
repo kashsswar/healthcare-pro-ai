@@ -12,7 +12,7 @@ function DoctorCategories({ onCategorySelect, selectedCategory }) {
 
   const loadCategories = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
       const response = await fetch(`${apiUrl}/api/doctors/categories`);
       const data = await response.json();
       setCategories(Array.isArray(data) ? data : []);
