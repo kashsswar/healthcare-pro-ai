@@ -5,7 +5,6 @@ client/node_modules/
 # Environment variables (SENSITIVE)
 .env
 .env.local
-.env.production
 
 # Build outputs
 client/build/
