@@ -9,7 +9,9 @@ router.post('/', async (req, res) => {
   
   try {
     console.log('Creating appointment object...');
-    const appointment = new Appointment({
+    console.log('MongoDB connection state:', require('mongoose').connection.readyState);
+    
+    const appointmentData = {
       patientId: req.body.patientId,
       doctorId: req.body.doctorId,
       scheduledTime: req.body.scheduledTime,
@@ -18,13 +20,24 @@ router.post('/', async (req, res) => {
       patient: req.body.patient,
       doctor: req.body.doctor,
       status: 'scheduled'
-    });
+    };
     
-    console.log('Appointment object created:', appointment);
+    console.log('Appointment data to save:', JSON.stringify(appointmentData, null, 2));
+    
+    const appointment = new Appointment(appointmentData);
+    console.log('Appointment object created successfully');
+    
+    console.log('Validating appointment...');
+    const validationError = appointment.validateSync();
+    if (validationError) {
+      console.error('Validation error:', validationError);
+      throw validationError;
+    }
+    
     console.log('Saving to database...');
-    await appointment.save();
-    console.log('Appointment saved successfully!');
-    res.status(201).json(appointment);
+    const savedAppointment = await appointment.save();
+    console.log('Appointment saved successfully with ID:', savedAppointment._id);
+    res.status(201).json(savedAppointment);
   } catch (error) {
     console.error('=== BOOK APPOINTMENT ERROR ===');
     console.error('Error message:', error.message);
