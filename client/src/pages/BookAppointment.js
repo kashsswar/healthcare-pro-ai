@@ -187,7 +187,10 @@ function BookAppointment({ user }) {
           type="datetime-local"
           value={formData.preferredDate}
           onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })}
-          inputProps={{ style: { cursor: 'pointer' } }}
+          inputProps={{ 
+            style: { cursor: 'pointer' },
+            min: new Date().toISOString().slice(0, 16) // Allow booking from current time
+          }}
           sx={{ 
             mb: 2,
             cursor: 'pointer',

@@ -77,15 +77,27 @@ function Dashboard({ user, socket }) {
       const userId = user._id || user.id;
       if (!userId) return;
       
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}/today`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
       
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          const appointments = await response.json();
-          setTodayAppointments(appointments);
-          console.log('Today appointments loaded:', appointments);
+          const allAppointments = await response.json();
+          
+          // Filter for today's appointments only
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          const todaysAppointments = allAppointments.filter(apt => {
+            const aptDate = new Date(apt.scheduledTime);
+            return aptDate >= today && aptDate < tomorrow;
+          });
+          
+          setTodayAppointments(todaysAppointments);
+          console.log('Today appointments loaded:', todaysAppointments);
         } else {
           console.log('API returned non-JSON response');
           setTodayAppointments([]);
