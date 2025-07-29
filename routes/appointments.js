@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const Appointment = require('../models/Appointment');
 
+// Test route
+router.get('/test-book', (req, res) => {
+  console.log('Test book route hit');
+  res.json({ message: 'Book appointment route is working', timestamp: new Date() });
+});
+
 // Create appointment
 router.post('/', async (req, res) => {
   try {
