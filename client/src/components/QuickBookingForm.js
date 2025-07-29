@@ -85,10 +85,9 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
     }
   };
 
-  // Get tomorrow's date as default
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  // Get today's date as minimum
+  const today = new Date();
+  const minDate = today.toISOString().split('T')[0];
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

@@ -11,9 +11,13 @@ function BookAppointment({ user }) {
   const { doctorId } = useParams();
   const navigate = useNavigate();
   const [doctor, setDoctor] = useState(null);
-  const [formData, setFormData] = useState({
-    preferredDate: '',
-    symptoms: ''
+  const [formData, setFormData] = useState(() => {
+    const now = new Date().toISOString().slice(0, 16);
+    console.log('Initial date set to:', now);
+    return {
+      preferredDate: now,
+      symptoms: ''
+    };
   });
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -181,22 +185,34 @@ function BookAppointment({ user }) {
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Typography variant="body2">DEBUG INFO:</Typography>
+          <Typography variant="body2">Current time: {new Date().toLocaleString()}</Typography>
+          <Typography variant="body2">Min allowed: {new Date().toISOString().slice(0, 16)}</Typography>
+          <Typography variant="body2">Selected: {formData.preferredDate}</Typography>
+        </Box>
+
         <TextField
           fullWidth
           label="Preferred Date & Time"
           type="datetime-local"
           value={formData.preferredDate}
-          onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })}
-          inputProps={{ 
-            style: { cursor: 'pointer' },
-            min: new Date().toISOString().slice(0, 16) // Allow booking from current time
+          onChange={(e) => {
+            console.log('Date changed to:', e.target.value);
+            console.log('Current date/time:', new Date().toISOString().slice(0, 16));
+            setFormData({ ...formData, preferredDate: e.target.value });
+          }}
+          InputProps={{
+            inputProps: {
+              min: (() => {
+                const minDate = new Date().toISOString().slice(0, 16);
+                console.log('Min date set to:', minDate);
+                return minDate;
+              })()
+            }
           }}
           sx={{ 
-            mb: 2,
-            cursor: 'pointer',
-            '& .MuiInputBase-root': { cursor: 'pointer' },
-            '& input': { cursor: 'pointer !important' },
-            '& input::-webkit-calendar-picker-indicator': { cursor: 'pointer' }
+            mb: 2
           }}
           InputLabelProps={{ shrink: true }}
           helperText={`Dr. ${doctor.userId?.name} is available 9:00 AM - 5:00 PM`}

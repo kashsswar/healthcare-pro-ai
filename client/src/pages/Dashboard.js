@@ -75,35 +75,57 @@ function Dashboard({ user, socket }) {
   const loadTodayAppointments = async () => {
     try {
       const userId = user._id || user.id;
-      if (!userId) return;
+      console.log('Loading appointments for doctor ID:', userId);
+      if (!userId) {
+        console.log('No user ID found');
+        return;
+      }
       
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
+      const url = `${apiUrl}/api/appointments/doctor/${userId}`;
+      console.log('Fetching appointments from:', url);
+      
+      const response = await fetch(url);
+      console.log('API response status:', response.status);
       
       if (response.ok) {
         const contentType = response.headers.get('content-type');
+        console.log('Response content type:', contentType);
+        
         if (contentType && contentType.includes('application/json')) {
           const allAppointments = await response.json();
+          console.log('=== DASHBOARD API RESPONSE ===');
+          console.log('All appointments from API:', allAppointments);
+          console.log('Total appointments count:', allAppointments.length);
           
-          // Filter for today's appointments only
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          
-          const todaysAppointments = allAppointments.filter(apt => {
-            const aptDate = new Date(apt.scheduledTime);
-            return aptDate >= today && aptDate < tomorrow;
-          });
-          
-          setTodayAppointments(todaysAppointments);
-          console.log('Today appointments loaded:', todaysAppointments);
+          if (allAppointments.length > 0) {
+            console.log('Setting appointments to state...');
+            setTodayAppointments(allAppointments);
+            console.log('State should be updated now');
+            
+            // Log each appointment's date
+            allAppointments.forEach((apt, index) => {
+              console.log(`Dashboard Appointment ${index}:`, {
+                id: apt._id,
+                scheduledTime: apt.scheduledTime,
+                date: new Date(apt.scheduledTime).toLocaleString(),
+                dateString: new Date(apt.scheduledTime).toDateString(),
+                status: apt.status,
+                patient: apt.patient?.name
+              });
+            });
+          } else {
+            console.log('No appointments returned from API');
+            setTodayAppointments([]);
+          }
         } else {
           console.log('API returned non-JSON response');
           setTodayAppointments([]);
         }
       } else {
-        console.log('API response not ok');
+        console.log('API response not ok, status:', response.status);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         setTodayAppointments([]);
       }
     } catch (error) {
@@ -113,9 +135,46 @@ function Dashboard({ user, socket }) {
   };
   
   const getTodayQueue = () => {
-    return todayAppointments.filter(apt => 
-      apt.status === 'scheduled' || apt.status === 'in-progress'
-    );
+    console.log('=== getTodayQueue called ===');
+    console.log('todayAppointments array:', todayAppointments);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    console.log('Today date range:', today.toLocaleString(), 'to', tomorrow.toLocaleString());
+    
+    const filteredAppointments = todayAppointments.filter(apt => {
+      const aptDate = new Date(apt.scheduledTime);
+      const isToday = aptDate >= today && aptDate < tomorrow;
+      const isActive = apt.status === 'scheduled' || apt.status === 'in-progress';
+      
+      console.log('Appointment filter check:', {
+        appointmentId: apt._id,
+        scheduledTime: apt.scheduledTime,
+        aptDate: aptDate.toLocaleString(),
+        aptDateString: aptDate.toDateString(),
+        today: today.toLocaleString(),
+        todayString: today.toDateString(),
+        tomorrow: tomorrow.toLocaleString(),
+        isToday,
+        status: apt.status,
+        isActive,
+        willShow: isToday && isActive,
+        patientName: apt.patient?.name || apt.patientId?.name || 'Unknown'
+      });
+      
+      return isToday && isActive;
+    });
+    
+    console.log('Today queue result:', {
+      totalAppointments: todayAppointments.length,
+      filteredCount: filteredAppointments.length,
+      todayDate: today.toDateString()
+    });
+    
+    return filteredAppointments;
   };
   
   const getCompletedAppointments = () => {
@@ -270,7 +329,7 @@ function Dashboard({ user, socket }) {
       if (!userId) return;
       
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/appointments/patient/${userId}`);
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
       
       if (response.ok) {
         const appointments = await response.json();
@@ -430,9 +489,23 @@ function Dashboard({ user, socket }) {
         {/* Today's Queue */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              📋 Today's Patient Queue ({getTodayQueue().length})
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                📋 Today's Patient Queue ({getTodayQueue().length})
+              </Typography>
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={async () => {
+                  alert('Refreshing appointments...');
+                  console.log('Manual refresh clicked');
+                  await loadTodayAppointments();
+                  alert('Refresh completed');
+                }}
+              >
+                🔄 Refresh
+              </Button>
+            </Box>
             {getTodayQueue().length === 0 ? (
               <Typography color="textSecondary">No appointments scheduled for today</Typography>
             ) : (
