@@ -73,12 +73,18 @@ function DoctorProfile({ user, onUpdate }) {
       const userId = user._id || user.id;
       if (!userId) return;
       
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}/stats`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
       if (response.ok) {
-        const stats = await response.json();
-        setReviewCount(stats.reviewCount || 0);
-        setPatientCount(stats.completedAppointments || 0);
+        const appointments = await response.json();
+        
+        // Calculate total bookings minus cancelled
+        const totalBookings = appointments.length;
+        const cancelledBookings = appointments.filter(apt => apt.status === 'cancelled').length;
+        const patientsTreated = totalBookings - cancelledBookings;
+        
+        setPatientCount(patientsTreated);
+        setReviewCount(0); // Reviews count from localStorage or API if available
       }
     } catch (error) {
       console.error('Error loading stats:', error);

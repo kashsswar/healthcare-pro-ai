@@ -1,12 +1,51 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Select, MenuItem, FormControl } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { AppBar, Toolbar, Typography, Button, Box, Select, MenuItem, FormControl, Menu, List, ListItem, ListItemText, Chip, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { LocalHospital } from '@mui/icons-material';
+import { LocalHospital, ExpandMore } from '@mui/icons-material';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
   const { currentLanguage, changeLanguage, t } = useLanguage();
+  const [queueAnchor, setQueueAnchor] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  
+  const loadAppointments = async () => {
+    if (user.role !== 'doctor') return;
+    
+    try {
+      const doctorId = user._id || user.id;
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/doctor/${doctorId}`);
+      
+      if (response.ok) {
+        const allAppointments = await response.json();
+        const todayAndFuture = allAppointments.filter(apt => {
+          const aptDate = new Date(apt.scheduledTime);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return aptDate >= today;
+        });
+        setAppointments(todayAndFuture);
+      }
+    } catch (error) {
+      console.error('Failed to load appointments:', error);
+    }
+  };
+  
+  useEffect(() => {
+    loadAppointments();
+    
+    const handleAppointmentUpdate = () => {
+      loadAppointments();
+    };
+    
+    window.addEventListener('appointmentUpdated', handleAppointmentUpdate);
+    
+    return () => {
+      window.removeEventListener('appointmentUpdated', handleAppointmentUpdate);
+    };
+  }, [user]);
   
   const languages = [
     { code: 'en', name: '🇬🇧 English' },
@@ -53,9 +92,57 @@ function Navbar({ user, onLogout }) {
             </>
           )}
           {user.role === 'doctor' && (
-            <Button color="inherit" onClick={() => navigate(`/queue/${user._id || user.id}`)}>
-              {t('myQueue')}
-            </Button>
+            <>
+              <Button 
+                color="inherit" 
+                onClick={(e) => setQueueAnchor(e.currentTarget)}
+                endIcon={<ExpandMore />}
+              >
+                My Queue ({appointments.length})
+              </Button>
+              <Menu
+                anchorEl={queueAnchor}
+                open={Boolean(queueAnchor)}
+                onClose={() => setQueueAnchor(null)}
+                PaperProps={{
+                  style: {
+                    maxHeight: 400,
+                    width: 350,
+                  },
+                }}
+              >
+                {appointments.length === 0 ? (
+                  <MenuItem disabled>
+                    No appointments scheduled
+                  </MenuItem>
+                ) : (
+                  appointments.map((appointment, index) => (
+                    <div key={appointment._id}>
+                      <MenuItem onClick={() => {
+                        setQueueAnchor(null);
+                        navigate('/dashboard');
+                      }}>
+                        <ListItemText
+                          primary={appointment.patient?.name || 'Patient'}
+                          secondary={
+                            <>
+                              <div>{new Date(appointment.scheduledTime).toLocaleString()}</div>
+                              <Chip 
+                                label={appointment.status.toUpperCase()} 
+                                size="small" 
+                                color={appointment.status === 'scheduled' ? 'warning' : 'success'}
+                                sx={{ mt: 0.5 }}
+                              />
+                            </>
+                          }
+                        />
+                      </MenuItem>
+                      {index < appointments.length - 1 && <Divider />}
+                    </div>
+                  ))
+                )}
+              </Menu>
+            </>
           )}
           <Button color="inherit" onClick={onLogout}>
             {t('logout')} ({user.name})

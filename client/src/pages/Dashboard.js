@@ -150,21 +150,6 @@ function Dashboard({ user, socket }) {
       const isToday = aptDate >= today && aptDate < tomorrow;
       const isActive = apt.status === 'scheduled' || apt.status === 'in-progress';
       
-      console.log('Appointment filter check:', {
-        appointmentId: apt._id,
-        scheduledTime: apt.scheduledTime,
-        aptDate: aptDate.toLocaleString(),
-        aptDateString: aptDate.toDateString(),
-        today: today.toLocaleString(),
-        todayString: today.toDateString(),
-        tomorrow: tomorrow.toLocaleString(),
-        isToday,
-        status: apt.status,
-        isActive,
-        willShow: isToday && isActive,
-        patientName: apt.patient?.name || apt.patientId?.name || 'Unknown'
-      });
-      
       return isToday && isActive;
     });
     
@@ -329,10 +314,19 @@ function Dashboard({ user, socket }) {
       if (!userId) return;
       
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
+      
+      // Load different endpoints based on user role
+      const endpoint = user.role === 'doctor' 
+        ? `${apiUrl}/api/appointments/doctor/${userId}`
+        : `${apiUrl}/api/appointments/patient/${userId}`;
+      
+      console.log('Loading appointments from:', endpoint);
+      const response = await fetch(endpoint);
       
       if (response.ok) {
         const appointments = await response.json();
+        console.log('Loaded appointments:', appointments);
+        
         const processedAppointments = appointments.map(apt => ({
           ...apt,
           status: apt.status || 'scheduled',
@@ -341,6 +335,7 @@ function Dashboard({ user, socket }) {
         
         setAppointments(processedAppointments);
       } else {
+        console.log('Failed to load appointments, status:', response.status);
         setAppointments([]);
       }
       
@@ -348,7 +343,7 @@ function Dashboard({ user, socket }) {
       console.error('Dashboard load error:', error);
       setAppointments([]);
     }
-  }, [user.id, user._id]);
+  }, [user.id, user._id, user.role]);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
@@ -414,38 +409,37 @@ function Dashboard({ user, socket }) {
     }
     
     try {
-      // Remove from local appointments
-      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+      // Cancel appointment via API
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
+        method: 'DELETE'
+      });
       
-      // Update localStorage
-      const bookedAppointments = JSON.parse(localStorage.getItem('bookedAppointments') || '[]');
-      const cancelledAppointment = bookedAppointments.find(apt => apt._id === appointmentId);
-      const updatedAppointments = bookedAppointments.filter(apt => apt._id !== appointmentId);
-      localStorage.setItem('bookedAppointments', JSON.stringify(updatedAppointments));
-      
-      // Add to cancelled appointments
-      const cancelledAppointments = JSON.parse(localStorage.getItem('cancelledAppointments') || '[]');
-      if (cancelledAppointment) {
-        cancelledAppointments.push({
-          ...cancelledAppointment,
-          status: 'cancelled',
-          cancelledAt: new Date(),
-          refundAmount: 500
-        });
-        localStorage.setItem('cancelledAppointments', JSON.stringify(cancelledAppointments));
+      if (response.ok) {
+        // Remove from local appointments
+        setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+        
+        // Dispatch auto-refresh events for doctor's queue
+        window.dispatchEvent(new CustomEvent('appointmentUpdated', { 
+          detail: { type: 'cancelled', appointmentId } 
+        }));
+        
+        // Notify doctor via socket if available
+        if (socket) {
+          socket.emit('appointment-cancelled', {
+            appointmentId,
+            patientName: user.name,
+            message: `${user.name} has cancelled their appointment`
+          });
+        }
+        
+        alert('Appointment cancelled successfully! Booking amount has been refunded to your account. Doctor has been notified.');
+        
+        // Reload dashboard data
+        loadDashboardData();
+      } else {
+        throw new Error('Failed to update appointment status');
       }
-      
-      // Dispatch auto-refresh events
-      window.dispatchEvent(new CustomEvent('appointmentUpdated', { 
-        detail: { type: 'cancelled', appointmentId } 
-      }));
-      window.dispatchEvent(new Event('storage'));
-      
-      // Simulate refund notification
-      alert('Appointment cancelled successfully! Booking amount has been refunded to your account. It will reflect in 2-3 business days.');
-      
-      // Reload dashboard data
-      loadDashboardData();
       
     } catch (error) {
       console.error('Failed to cancel appointment:', error);
@@ -480,8 +474,7 @@ function Dashboard({ user, socket }) {
         {/* Doctor Appointment Queue */}
         <DoctorAppointmentQueue user={{...user, doctorId: user._id || user.id}} socket={socket} />
         
-        {/* Doctor Location Manager */}
-        <DoctorLocationManager user={{...user, doctorId: user._id || user.id}} />
+
         
         {/* Doctor Payouts */}
         <DoctorPayouts user={user} />

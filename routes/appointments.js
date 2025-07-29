@@ -185,4 +185,54 @@ router.post('/convert-patient-ids', async (req, res) => {
   }
 });
 
+// Update appointment (including cancel)
+router.put('/:appointmentId', async (req, res) => {
+  try {
+    console.log('Updating appointment:', req.params.appointmentId, 'with data:', req.body);
+    
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.appointmentId,
+      req.body,
+      { new: true }
+    );
+    
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+    
+    console.log('Appointment updated successfully:', appointment._id);
+    res.json({ message: 'Appointment updated successfully', appointment });
+  } catch (error) {
+    console.error('Update appointment error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Cancel appointment
+router.put('/:appointmentId/cancel', async (req, res) => {
+  try {
+    console.log('Cancelling appointment:', req.params.appointmentId);
+    
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.appointmentId,
+      { 
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledBy: req.body.cancelledBy || 'patient'
+      },
+      { new: true }
+    );
+    
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+    
+    console.log('Appointment cancelled successfully:', appointment._id);
+    res.json({ message: 'Appointment cancelled successfully', appointment });
+  } catch (error) {
+    console.error('Cancel appointment error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

@@ -26,10 +26,19 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
     try {
       console.log('Doctor object:', doctor);
       console.log('Patient object:', patient);
+      console.log('=== BOOKING DATA ===');
+      console.log('Full doctor object:', JSON.stringify(doctor, null, 2));
+      console.log('doctor._id:', doctor._id);
+      console.log('doctor.userId:', doctor.userId);
+      console.log('doctor.userId._id:', doctor.userId?._id);
+      console.log('doctor.doctorId:', doctor.doctorId);
+      console.log('Expected doctor ID: 68833140c62b0feec7a55a6b');
+      console.log('DoctorId being used in booking:', doctor.userId?._id || doctor._id);
+      console.log('Patient ID:', patient._id || patient.id);
       
       const appointmentData = {
         patientId: patient._id || patient.id,
-        doctorId: doctor._id || doctor.userId?._id,
+        doctorId: doctor.userId?._id || doctor._id,
         scheduledTime: new Date(`${selectedDate}T${selectedTime}`).toISOString(),
         symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
         consultationFee: doctor.consultationFee,

@@ -212,14 +212,7 @@ function DoctorAvailabilityToggle({ user, socket }) {
           </Grid>
         </Card>
 
-        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Schedule color="primary" />
-            <Typography variant="body2">
-              Waiting Patients: <strong>{waitingPatients}</strong>
-            </Typography>
-          </Box>
-          
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
             variant="outlined" 
             size="small"
