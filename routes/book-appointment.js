@@ -4,7 +4,11 @@ const Appointment = require('../models/Appointment');
 
 // Book appointment
 router.post('/', async (req, res) => {
+  console.log('=== BOOK APPOINTMENT ROUTE HIT ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
+    console.log('Creating appointment object...');
     const appointment = new Appointment({
       patientId: req.body.patientId,
       doctorId: req.body.doctorId,
@@ -16,10 +20,17 @@ router.post('/', async (req, res) => {
       status: 'scheduled'
     });
     
+    console.log('Appointment object created:', appointment);
+    console.log('Saving to database...');
     await appointment.save();
+    console.log('Appointment saved successfully!');
     res.status(201).json(appointment);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('=== BOOK APPOINTMENT ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    res.status(500).json({ message: error.message, error: error.toString() });
   }
 });
 
