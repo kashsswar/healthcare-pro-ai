@@ -12,13 +12,12 @@ router.post('/', async (req, res) => {
     console.log('MongoDB connection state:', require('mongoose').connection.readyState);
     
     const appointmentData = {
-      patientId: req.body.patientId,
+      patient: req.body.patientId, // Use patientId as ObjectId reference
       doctorId: req.body.doctorId,
       scheduledTime: req.body.scheduledTime,
       symptoms: req.body.symptoms || [],
       consultationFee: req.body.consultationFee,
-      patient: req.body.patient,
-      doctor: req.body.doctor,
+      doctor: req.body.doctor, // Keep doctor object as embedded document
       status: 'scheduled'
     };
     
