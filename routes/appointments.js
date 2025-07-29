@@ -13,6 +13,21 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Book appointment (alternative endpoint)
+router.post('/book-appointment', async (req, res) => {
+  try {
+    console.log('Booking appointment with data:', req.body);
+    const appointment = new Appointment(req.body);
+    const savedAppointment = await appointment.save();
+    console.log('Appointment saved successfully:', savedAppointment._id);
+    res.status(201).json(savedAppointment);
+  } catch (error) {
+    console.error('Book appointment error:', error.message);
+    console.error('Request body:', req.body);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all appointments
 router.get('/', async (req, res) => {
   try {
