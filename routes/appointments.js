@@ -21,16 +21,25 @@ router.post('/', async (req, res) => {
 
 // Book appointment (alternative endpoint)
 router.post('/book-appointment', async (req, res) => {
+  console.log('=== BOOK APPOINTMENT ROUTE HIT ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request headers:', req.headers);
+  
   try {
-    console.log('Booking appointment with data:', req.body);
+    console.log('Creating new appointment...');
     const appointment = new Appointment(req.body);
+    console.log('Appointment object created, saving...');
     const savedAppointment = await appointment.save();
     console.log('Appointment saved successfully:', savedAppointment._id);
     res.status(201).json(savedAppointment);
   } catch (error) {
-    console.error('Book appointment error:', error.message);
-    console.error('Request body:', req.body);
-    res.status(500).json({ message: error.message });
+    console.error('=== BOOK APPOINTMENT ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body that caused error:', JSON.stringify(req.body, null, 2));
+    res.status(500).json({ message: error.message, error: error.toString() });
   }
 });
 
