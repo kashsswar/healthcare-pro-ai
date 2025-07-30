@@ -4,6 +4,7 @@ import {
   Box, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { Person, Save, Edit } from '@mui/icons-material';
+import PatientReviewHistory from './PatientReviewHistory';
 
 function PatientProfile({ user, onUpdate }) {
   const [profile, setProfile] = useState({
@@ -173,6 +174,9 @@ function PatientProfile({ user, onUpdate }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Patient Review History */}
+      <PatientReviewHistory patientId={user._id || user.id} />
 
       {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>

@@ -19,26 +19,43 @@ function PatientReview({ open, onClose, doctor, patient, onReviewSubmit }) {
     setSubmitting(true);
     try {
       const reviewData = {
-        doctorId: doctor._id || doctor.userId?._id,
+        doctorId: doctor.userId?._id || doctor._id,
         patientId: patient._id || patient.id,
         patientName: patient.name,
         rating: rating,
         review: review
       };
 
+      console.log('=== SUBMITTING REVIEW ===');
+      console.log('Review data:', reviewData);
+      console.log('Doctor object:', doctor);
+      console.log('Doctor._id:', doctor._id);
+      console.log('Doctor.userId._id:', doctor.userId?._id);
+      console.log('Patient object:', patient);
+      console.log('Patient._id:', patient._id);
+      console.log('Patient.id:', patient.id);
+
       // Save review to API
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/reviews`, {
+      const url = `${apiUrl}/api/reviews`;
+      console.log('Submitting to URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reviewData)
       });
 
+      console.log('Review submission response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Review submission error response:', errorText);
         throw new Error('Failed to submit review');
       }
 
       const savedReview = await response.json();
+      console.log('Review saved successfully:', savedReview);
 
       if (onReviewSubmit) {
         onReviewSubmit(savedReview, rating);

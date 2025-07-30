@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, Grid, Card, CardContent, Typography, Button, 
-  List, ListItem, ListItemText, Chip, Box, Tab, Tabs 
+  List, ListItem, ListItemText, Chip, Box, Tab, Tabs, Collapse 
 } from '@mui/material';
+import { ExpandMore, ExpandLess, Phone, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { appointmentAPI, aiAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -31,6 +32,7 @@ function Dashboard({ user, socket }) {
   const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
   const [bankDialog, setBankDialog] = useState(false);
   const [patientBankDialog, setPatientBankDialog] = useState(false);
+  const [recentListExpanded, setRecentListExpanded] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -403,6 +405,51 @@ function Dashboard({ user, socket }) {
     return colors[status] || 'default';
   };
   
+  const confirmAppointment = async (appointmentId) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'confirmed' })
+      });
+      
+      if (response.ok) {
+        alert('Appointment confirmed! Patient has been notified.');
+        loadTodayAppointments();
+      }
+    } catch (error) {
+      console.error('Failed to confirm appointment:', error);
+      alert('Failed to confirm appointment');
+    }
+  };
+  
+  const cancelDoctorAppointment = async (appointmentId) => {
+    if (!window.confirm('Are you sure you want to cancel this appointment? Money will be refunded to patient.')) {
+      return;
+    }
+    
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'cancelled',
+          cancelledBy: 'doctor'
+        })
+      });
+      
+      if (response.ok) {
+        alert('Appointment cancelled successfully! ₹500 has been refunded to patient account.');
+        loadTodayAppointments();
+      }
+    } catch (error) {
+      console.error('Failed to cancel appointment:', error);
+      alert('Failed to cancel appointment');
+    }
+  };
+
   const cancelPatientAppointment = async (appointmentId) => {
     if (!window.confirm('Are you sure you want to cancel this appointment? You will receive a full refund.')) {
       return;
@@ -479,7 +526,7 @@ function Dashboard({ user, socket }) {
         {/* Doctor Payouts */}
         <DoctorPayouts user={user} />
         
-        {/* Today's Queue */}
+        {/* Today's Patient Queue */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -490,10 +537,7 @@ function Dashboard({ user, socket }) {
                 variant="outlined" 
                 size="small" 
                 onClick={async () => {
-                  alert('Refreshing appointments...');
-                  console.log('Manual refresh clicked');
                   await loadTodayAppointments();
-                  alert('Refresh completed');
                 }}
               >
                 🔄 Refresh
@@ -516,10 +560,88 @@ function Dashboard({ user, socket }) {
                     {appointment.symptoms && appointment.symptoms.length > 0 && (
                       <Typography variant="body2">🩺 Symptoms: {appointment.symptoms.join(', ')}</Typography>
                     )}
+                    
+                    {appointment.status === 'scheduled' && (
+                      <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          startIcon={<CheckCircle />}
+                          onClick={() => confirmAppointment(appointment._id)}
+                          size="small"
+                        >
+                          ✅ DONE
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={<Phone />}
+                          onClick={() => {
+                            const phoneNumber = appointment.patientId?.phone || appointment.patient?.phone;
+                            if (phoneNumber) {
+                              window.open(`tel:${phoneNumber}`, '_self');
+                            } else {
+                              alert('Patient phone number not available');
+                            }
+                          }}
+                          size="small"
+                        >
+                          📞 Call
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => cancelDoctorAppointment(appointment._id)}
+                          size="small"
+                        >
+                          ❌ Cancel
+                        </Button>
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
               ))
             )}
+          </CardContent>
+        </Card>
+        
+        {/* Recent Patient List - Collapsible */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Button 
+              onClick={() => setRecentListExpanded(!recentListExpanded)}
+              startIcon={recentListExpanded ? <ExpandLess /> : <ExpandMore />}
+              sx={{ textTransform: 'none', p: 0 }}
+            >
+              <Typography variant="h6">
+                📋 Recent Patient List ({todayAppointments.length})
+              </Typography>
+            </Button>
+            
+            <Collapse in={recentListExpanded}>
+              <Box sx={{ mt: 2 }}>
+                {todayAppointments.length === 0 ? (
+                  <Typography color="textSecondary">No recent appointments</Typography>
+                ) : (
+                  todayAppointments.map((appointment) => (
+                    <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'info.light' }}>
+                      <CardContent>
+                        <Typography variant="h6">{appointment.patientId?.name || appointment.patient?.name || 'Patient'}</Typography>
+                        <Typography variant="body2">📧 {appointment.patientId?.email || appointment.patient?.email || 'No email'} | 📱 {appointment.patientId?.phone || appointment.patient?.phone || 'No phone'}</Typography>
+                        <Chip 
+                          label={appointment.status?.toUpperCase() || 'SCHEDULED'} 
+                          color={getStatusColor(appointment.status)}
+                          sx={{ mt: 1 }}
+                        />
+                        <Typography variant="body2" sx={{ mt: 1 }}>Scheduled: {new Date(appointment.scheduledTime).toLocaleString()}</Typography>
+                        {appointment.symptoms && appointment.symptoms.length > 0 && (
+                          <Typography variant="body2">🩺 Symptoms: {appointment.symptoms.join(', ')}</Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </Box>
+            </Collapse>
           </CardContent>
         </Card>
         

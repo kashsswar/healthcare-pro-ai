@@ -4,6 +4,7 @@ import {
   Box, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { Person, Save, Edit } from '@mui/icons-material';
+import ReviewsList from './ReviewsList';
 
 function DoctorProfile({ user, onUpdate }) {
   
@@ -33,6 +34,11 @@ function DoctorProfile({ user, onUpdate }) {
 
   useEffect(() => {
     const userId = user._id || user.id;
+    console.log('=== DOCTOR PROFILE LOADING ===');
+    console.log('User object:', user);
+    console.log('User._id:', user._id);
+    console.log('User.id:', user.id);
+    console.log('Using userId:', userId);
     if (userId) {
       loadProfile();
       loadStats();
@@ -217,6 +223,9 @@ function DoctorProfile({ user, onUpdate }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Reviews List */}
+      <ReviewsList doctorId={user._id || user.id} userRole="doctor" />
 
       {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>

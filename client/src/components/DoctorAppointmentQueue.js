@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, CardContent, Typography, List, ListItem, ListItemText, 
-  Button, Box, Chip, Alert, Avatar, Divider
+  Button, Box, Chip, Alert, Avatar, Divider, Collapse
 } from '@mui/material';
-import { Person, CheckCircle, Schedule, Phone } from '@mui/icons-material';
+import { Person, CheckCircle, Schedule, Phone, ExpandMore, ExpandLess } from '@mui/icons-material';
 import axios from 'axios';
 
 function DoctorAppointmentQueue({ user, socket }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     loadAppointments();
@@ -149,26 +150,33 @@ function DoctorAppointmentQueue({ user, socket }) {
   return (
     <Card sx={{ mb: 3 }}>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            📋 Today's Patient Queue ({appointments.length})
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Button 
+            onClick={() => setExpanded(!expanded)}
+            startIcon={expanded ? <ExpandLess /> : <ExpandMore />}
+            sx={{ textTransform: 'none' }}
+          >
+            <Typography variant="h6">
+              📋 Recent Patient Queue ({appointments.length})
+            </Typography>
+          </Button>
           <Button variant="outlined" size="small" onClick={loadAppointments}>
             Refresh
           </Button>
         </Box>
 
-        {loading && (
-          <Alert severity="info">Loading appointments...</Alert>
-        )}
+        <Collapse in={expanded}>
+          {loading && (
+            <Alert severity="info">Loading appointments...</Alert>
+          )}
 
-        {appointments.length === 0 && !loading && (
-          <Alert severity="info">
-            No scheduled appointments for today. Patients can book appointments with you.
-          </Alert>
-        )}
+          {appointments.length === 0 && !loading && (
+            <Alert severity="info">
+              No scheduled appointments. Patients can book appointments with you.
+            </Alert>
+          )}
 
-        <List>
+          <List>
           {appointments.map((appointment, index) => (
             <React.Fragment key={appointment._id}>
               <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch', p: 2 }}>
@@ -258,7 +266,8 @@ function DoctorAppointmentQueue({ user, socket }) {
               {index < appointments.length - 1 && <Divider />}
             </React.Fragment>
           ))}
-        </List>
+          </List>
+        </Collapse>
       </CardContent>
     </Card>
   );

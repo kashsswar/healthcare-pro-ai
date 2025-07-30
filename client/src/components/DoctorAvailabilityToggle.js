@@ -213,13 +213,13 @@ function DoctorAvailabilityToggle({ user, socket }) {
         </Card>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button 
+          {/* <Button 
             variant="outlined" 
             size="small"
             onClick={() => window.location.reload()}
           >
             Refresh Status
-          </Button>
+          </Button> */}
         </Box>
 
         <Box sx={{ mt: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
