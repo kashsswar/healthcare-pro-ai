@@ -33,6 +33,7 @@ app.use('/api/admin-boost', require('./routes/admin-boost'));
 app.use('/api/doctor-location', require('./routes/doctor-location'));
 app.use('/api/book-appointment', require('./routes/book-appointment'));
 app.use('/api/appointments', require('./routes/appointments'));
+app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/doctor-profile', require('./routes/doctor-profile'));
 app.use('/api/patient-profile', require('./routes/patient-profile'));
 

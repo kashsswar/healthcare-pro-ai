@@ -73,6 +73,7 @@ function DoctorProfile({ user, onUpdate }) {
       const userId = user._id || user.id;
       if (!userId) return;
       
+      // Load appointments for patient count
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/appointments/doctor/${userId}`);
       if (response.ok) {
@@ -84,8 +85,18 @@ function DoctorProfile({ user, onUpdate }) {
         const patientsTreated = totalBookings - cancelledBookings;
         
         setPatientCount(patientsTreated);
-        setReviewCount(0); // Reviews count from localStorage or API if available
       }
+      
+      // Load reviews from API
+      const reviewResponse = await fetch(`${apiUrl}/api/reviews/doctor/${userId}/stats`);
+      if (reviewResponse.ok) {
+        const reviewStats = await reviewResponse.json();
+        setReviewCount(reviewStats.reviewCount);
+        if (reviewStats.averageRating > 0) {
+          setRating(reviewStats.averageRating.toFixed(1));
+        }
+      }
+      
     } catch (error) {
       console.error('Error loading stats:', error);
     }

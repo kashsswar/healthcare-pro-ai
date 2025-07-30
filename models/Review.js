@@ -11,22 +11,24 @@ const reviewSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  patientName: {
+    type: String,
+    required: true
+  },
   rating: {
     type: Number,
     required: true,
     min: 1,
     max: 5
   },
-  comment: {
+  review: {
     type: String,
-    required: true
+    default: ''
   },
-  appointmentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Appointment'
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
 module.exports = mongoose.model('Review', reviewSchema);

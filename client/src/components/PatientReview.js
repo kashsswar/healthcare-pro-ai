@@ -19,40 +19,29 @@ function PatientReview({ open, onClose, doctor, patient, onReviewSubmit }) {
     setSubmitting(true);
     try {
       const reviewData = {
-        doctorId: doctor._id,
-        patientId: patient.id,
+        doctorId: doctor._id || doctor.userId?._id,
+        patientId: patient._id || patient.id,
         patientName: patient.name,
         rating: rating,
-        review: review,
-        date: new Date().toISOString()
+        review: review
       };
 
-      // Save review to localStorage
-      const existingReviews = JSON.parse(localStorage.getItem('doctorReviews') || '[]');
-      existingReviews.push(reviewData);
-      localStorage.setItem('doctorReviews', JSON.stringify(existingReviews));
-
-      // Update doctor's rating
-      const doctorReviews = existingReviews.filter(r => r.doctorId === doctor._id);
-      const avgRating = parseFloat((doctorReviews.reduce((sum, r) => sum + r.rating, 0) / doctorReviews.length).toFixed(1));
-      
-      // Update doctor data in localStorage
-      const doctors = JSON.parse(localStorage.getItem('doctors') || '[]');
-      const updatedDoctors = doctors.map(d => {
-        if (d._id === doctor._id) {
-          return {
-            ...d,
-            rating: avgRating,
-            finalRating: avgRating + (d.adminBoostRating || 0),
-            reviewCount: doctorReviews.length
-          };
-        }
-        return d;
+      // Save review to API
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData)
       });
-      localStorage.setItem('doctors', JSON.stringify(updatedDoctors));
+
+      if (!response.ok) {
+        throw new Error('Failed to submit review');
+      }
+
+      const savedReview = await response.json();
 
       if (onReviewSubmit) {
-        onReviewSubmit(reviewData, avgRating);
+        onReviewSubmit(savedReview, rating);
       }
 
       alert('Review submitted successfully!');
@@ -60,6 +49,7 @@ function PatientReview({ open, onClose, doctor, patient, onReviewSubmit }) {
       setReview('');
       onClose();
     } catch (error) {
+      console.error('Review submission error:', error);
       alert('Failed to submit review');
     } finally {
       setSubmitting(false);
