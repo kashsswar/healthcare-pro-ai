@@ -33,6 +33,7 @@ function Dashboard({ user, socket }) {
   const [bankDialog, setBankDialog] = useState(false);
   const [patientBankDialog, setPatientBankDialog] = useState(false);
   const [recentListExpanded, setRecentListExpanded] = useState(false);
+  const [todayQueueExpanded, setTodayQueueExpanded] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -322,12 +323,16 @@ function Dashboard({ user, socket }) {
         ? `${apiUrl}/api/appointments/doctor/${userId}`
         : `${apiUrl}/api/appointments/patient/${userId}`;
       
-      console.log('Loading appointments from:', endpoint);
-      const response = await fetch(endpoint);
+      // Add timestamp to prevent caching
+      const urlWithTimestamp = `${endpoint}?t=${Date.now()}`;
+      console.log('Loading appointments from:', urlWithTimestamp);
+      const response = await fetch(urlWithTimestamp);
       
       if (response.ok) {
         const appointments = await response.json();
-        console.log('Loaded appointments:', appointments);
+        console.log('=== DASHBOARD API RESPONSE ===');
+        console.log('Raw appointments from API:', appointments);
+        console.log('Number of appointments:', appointments.length);
         
         const processedAppointments = appointments.map(apt => ({
           ...apt,
@@ -335,9 +340,12 @@ function Dashboard({ user, socket }) {
           doctorName: apt.doctor?.name || apt.doctorName || 'Doctor'
         }));
         
+        console.log('Processed appointments:', processedAppointments);
         setAppointments(processedAppointments);
       } else {
         console.log('Failed to load appointments, status:', response.status);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         setAppointments([]);
       }
       
@@ -411,16 +419,16 @@ function Dashboard({ user, socket }) {
       const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'confirmed' })
+        body: JSON.stringify({ status: 'completed' })
       });
       
       if (response.ok) {
-        alert('Appointment confirmed! Patient has been notified.');
+        alert('Appointment marked as completed!');
         loadTodayAppointments();
       }
     } catch (error) {
-      console.error('Failed to confirm appointment:', error);
-      alert('Failed to confirm appointment');
+      console.error('Failed to complete appointment:', error);
+      alert('Failed to complete appointment');
     }
   };
   
@@ -431,17 +439,14 @@ function Dashboard({ user, socket }) {
     
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}/cancel`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: 'cancelled',
-          cancelledBy: 'doctor'
-        })
+        body: JSON.stringify({ cancelledBy: 'doctor' })
       });
       
       if (response.ok) {
-        alert('Appointment cancelled successfully! ₹500 has been refunded to patient account.');
+        alert('Appointment cancelled successfully! Money has been refunded to patient account.');
         loadTodayAppointments();
       }
     } catch (error) {
@@ -456,22 +461,24 @@ function Dashboard({ user, socket }) {
     }
     
     try {
-      // Cancel appointment via API
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}`, {
-        method: 'DELETE'
+      const response = await fetch(`${apiUrl}/api/appointments/${appointmentId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelledBy: 'patient' })
       });
       
       if (response.ok) {
-        // Remove from local appointments
-        setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+        setAppointments(prev => prev.map(apt => 
+          apt._id === appointmentId 
+            ? { ...apt, status: 'cancelled' }
+            : apt
+        ));
         
-        // Dispatch auto-refresh events for doctor's queue
         window.dispatchEvent(new CustomEvent('appointmentUpdated', { 
           detail: { type: 'cancelled', appointmentId } 
         }));
         
-        // Notify doctor via socket if available
         if (socket) {
           socket.emit('appointment-cancelled', {
             appointmentId,
@@ -480,12 +487,10 @@ function Dashboard({ user, socket }) {
           });
         }
         
-        alert('Appointment cancelled successfully! Booking amount has been refunded to your account. Doctor has been notified.');
-        
-        // Reload dashboard data
+        alert('Appointment cancelled successfully! Booking amount has been refunded to your account.');
         loadDashboardData();
       } else {
-        throw new Error('Failed to update appointment status');
+        throw new Error('Failed to cancel appointment');
       }
       
     } catch (error) {
@@ -495,15 +500,19 @@ function Dashboard({ user, socket }) {
   };
 
   const upcomingAppointments = appointments.filter(apt => {
-    const now = new Date();
     const appointmentTime = new Date(apt.scheduledTime);
-    const isUpcoming = appointmentTime > now;
-    const isScheduled = apt.status === 'scheduled' || apt.status === 'pending';
-    
-    return isUpcoming && isScheduled;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return appointmentTime >= today && apt.status !== 'cancelled';
   });
   
-  console.log('Upcoming appointments for today:', upcomingAppointments.length);
+  console.log('=== PATIENT APPOINTMENTS DEBUG ===');
+  console.log('Total appointments loaded:', appointments.length);
+  console.log('All appointments:', appointments);
+  console.log('Upcoming appointments:', upcomingAppointments.length);
+  console.log('User role:', user.role);
+  console.log('User ID:', user._id || user.id);
+  console.log('==================================');
 
   if (user.role === 'doctor') {
     return (
@@ -519,20 +528,26 @@ function Dashboard({ user, socket }) {
         <DoctorAvailabilityToggle user={{...user, doctorId: user._id || user.id}} socket={socket} />
         
         {/* Doctor Appointment Queue */}
-        <DoctorAppointmentQueue user={{...user, doctorId: user._id || user.id}} socket={socket} />
+        {/* <DoctorAppointmentQueue user={{...user, doctorId: user._id || user.id}} socket={socket} /> */}
         
 
         
         {/* Doctor Payouts */}
         <DoctorPayouts user={user} />
         
-        {/* Today's Patient Queue */}
+        {/* Today's Patient Queue - Collapsible */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
-                📋 Today's Patient Queue ({getTodayQueue().length})
-              </Typography>
+              <Button 
+                onClick={() => setTodayQueueExpanded(!todayQueueExpanded)}
+                startIcon={todayQueueExpanded ? <ExpandLess /> : <ExpandMore />}
+                sx={{ textTransform: 'none', p: 0 }}
+              >
+                <Typography variant="h6">
+                  📋 Today's Patient Queue ({getTodayQueue().length})
+                </Typography>
+              </Button>
               <Button 
                 variant="outlined" 
                 size="small" 
@@ -543,64 +558,69 @@ function Dashboard({ user, socket }) {
                 🔄 Refresh
               </Button>
             </Box>
-            {getTodayQueue().length === 0 ? (
-              <Typography color="textSecondary">No appointments scheduled for today</Typography>
-            ) : (
-              getTodayQueue().map((appointment) => (
-                <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'grey.50' }}>
-                  <CardContent>
-                    <Typography variant="h6">{appointment.patientId?.name || appointment.patient?.name || 'Patient'}</Typography>
-                    <Typography variant="body2">📧 {appointment.patientId?.email || appointment.patient?.email || 'No email'} | 📱 {appointment.patientId?.phone || appointment.patient?.phone || 'No phone'}</Typography>
-                    <Chip 
-                      label={appointment.status?.toUpperCase() || 'SCHEDULED'} 
-                      color={appointment.status === 'in-progress' ? 'warning' : 'primary'}
-                      sx={{ mt: 1 }}
-                    />
-                    <Typography variant="body2" sx={{ mt: 1 }}>Scheduled: {new Date(appointment.scheduledTime).toLocaleString()}</Typography>
-                    {appointment.symptoms && appointment.symptoms.length > 0 && (
-                      <Typography variant="body2">🩺 Symptoms: {appointment.symptoms.join(', ')}</Typography>
-                    )}
-                    
-                    {appointment.status === 'scheduled' && (
-                      <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          startIcon={<CheckCircle />}
-                          onClick={() => confirmAppointment(appointment._id)}
-                          size="small"
-                        >
-                          ✅ DONE
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          startIcon={<Phone />}
-                          onClick={() => {
-                            const phoneNumber = appointment.patientId?.phone || appointment.patient?.phone;
-                            if (phoneNumber) {
-                              window.open(`tel:${phoneNumber}`, '_self');
-                            } else {
-                              alert('Patient phone number not available');
-                            }
-                          }}
-                          size="small"
-                        >
-                          📞 Call
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          onClick={() => cancelDoctorAppointment(appointment._id)}
-                          size="small"
-                        >
-                          ❌ Cancel
-                        </Button>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
+            
+            <Collapse in={todayQueueExpanded}>
+              <Box sx={{ mt: 2 }}>
+                {getTodayQueue().length === 0 ? (
+                  <Typography color="textSecondary">No appointments scheduled for today</Typography>
+                ) : (
+                  getTodayQueue().map((appointment) => (
+                    <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'grey.50' }}>
+                      <CardContent>
+                        <Typography variant="h6">{appointment.patientId?.name || appointment.patient?.name || 'Patient'}</Typography>
+                        <Typography variant="body2">📧 {appointment.patientId?.email || appointment.patient?.email || 'No email'} | 📱 {appointment.patientId?.phone || appointment.patient?.phone || 'No phone'}</Typography>
+                        <Chip 
+                          label={appointment.status?.toUpperCase() || 'SCHEDULED'} 
+                          color={appointment.status === 'in-progress' ? 'warning' : 'primary'}
+                          sx={{ mt: 1 }}
+                        />
+                        <Typography variant="body2" sx={{ mt: 1 }}>Scheduled: {new Date(appointment.scheduledTime).toLocaleString()}</Typography>
+                        {appointment.symptoms && appointment.symptoms.length > 0 && (
+                          <Typography variant="body2">🩺 Symptoms: {appointment.symptoms.join(', ')}</Typography>
+                        )}
+                        
+                        {appointment.status === 'scheduled' && (
+                          <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              startIcon={<CheckCircle />}
+                              onClick={() => confirmAppointment(appointment._id)}
+                              size="small"
+                            >
+                              ✅ DONE
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              startIcon={<Phone />}
+                              onClick={() => {
+                                const phoneNumber = appointment.patientId?.phone || appointment.patient?.phone;
+                                if (phoneNumber) {
+                                  window.open(`tel:${phoneNumber}`, '_self');
+                                } else {
+                                  alert('Patient phone number not available');
+                                }
+                              }}
+                              size="small"
+                            >
+                              📞 Call
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              onClick={() => cancelDoctorAppointment(appointment._id)}
+                              size="small"
+                            >
+                              ❌ Cancel
+                            </Button>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </Box>
+            </Collapse>
           </CardContent>
         </Card>
         
@@ -623,7 +643,7 @@ function Dashboard({ user, socket }) {
                   <Typography color="textSecondary">No recent appointments</Typography>
                 ) : (
                   todayAppointments.map((appointment) => (
-                    <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'info.light' }}>
+                    <Card key={appointment._id} sx={{ mb: 2, bgcolor: 'rgb(235, 235, 232)' }}>
                       <CardContent>
                         <Typography variant="h6">{appointment.patientId?.name || appointment.patient?.name || 'Patient'}</Typography>
                         <Typography variant="body2">📧 {appointment.patientId?.email || appointment.patient?.email || 'No email'} | 📱 {appointment.patientId?.phone || appointment.patient?.phone || 'No phone'}</Typography>
@@ -840,9 +860,21 @@ function Dashboard({ user, socket }) {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                {t('upcomingAppointments')} ({upcomingAppointments.length})
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  {t('upcomingAppointments')} ({upcomingAppointments.length})
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => {
+                    console.log('Manual refresh triggered');
+                    loadDashboardData();
+                  }}
+                >
+                  🔄 Refresh
+                </Button>
+              </Box>
               {upcomingAppointments.length === 0 ? (
                 <Typography color="textSecondary">
                   {t('noAppointments')}
@@ -884,7 +916,7 @@ function Dashboard({ user, socket }) {
                           size="small"
                           onClick={() => cancelPatientAppointment(appointment._id)}
                           sx={{ fontSize: '0.75rem' }}
-                          disabled={appointment.status !== 'scheduled'}
+                          disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
                         >
                           Cancel
                         </Button>
@@ -920,7 +952,7 @@ function Dashboard({ user, socket }) {
                   <ListItem key={appointment._id} divider>
                     <ListItemText
                       primary={`Consultation with Dr. ${appointment.doctorName || appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor'}`}
-                      secondary={new Date(appointment.createdAt || appointment.scheduledTime).toLocaleDateString()}
+                      secondary={new Date(appointment.scheduledTime).toLocaleDateString()}
                     />
                     <Chip 
                       label={appointment.status} 

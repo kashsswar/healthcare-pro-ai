@@ -11,10 +11,23 @@ router.get('/test-book', (req, res) => {
 // Create appointment
 router.post('/', async (req, res) => {
   try {
+    console.log('=== CREATING NEW APPOINTMENT ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const appointment = new Appointment(req.body);
-    await appointment.save();
-    res.status(201).json(appointment);
+    const savedAppointment = await appointment.save();
+    
+    console.log('Appointment saved successfully:', {
+      id: savedAppointment._id,
+      patientId: savedAppointment.patientId,
+      doctorId: savedAppointment.doctorId,
+      scheduledTime: savedAppointment.scheduledTime,
+      createdAt: savedAppointment.createdAt
+    });
+    
+    res.status(201).json(savedAppointment);
   } catch (error) {
+    console.error('Error creating appointment:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -71,9 +84,15 @@ router.get('/doctor/:doctorId', async (req, res) => {
 // Get appointments for a patient
 router.get('/patient/:patientId', async (req, res) => {
   try {
-    const appointments = await Appointment.find({ patientId: req.params.patientId })
-      .populate('doctorId', 'name specialization')
-      .sort({ scheduledTime: -1 });
+    const appointments = await Appointment.find({ 
+      $or: [
+        { patientId: req.params.patientId },
+        { patient: req.params.patientId }
+      ]
+    })
+    .populate('doctorId', 'name specialization')
+    .sort({ scheduledTime: -1 });
+    
     res.json(appointments);
   } catch (error) {
     res.status(500).json({ message: error.message });

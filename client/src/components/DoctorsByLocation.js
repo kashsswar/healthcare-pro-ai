@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Card, CardContent, Grid, Button, 
   Avatar, Rating, Chip, Alert, FormControl, InputLabel, Select, MenuItem,
-  TextField, Switch, FormControlLabel
+  TextField, Switch, FormControlLabel, Collapse
 } from '@mui/material';
-import { LocationOn, Star, Schedule } from '@mui/icons-material';
+import { LocationOn, Star, Schedule, ExpandMore, ExpandLess } from '@mui/icons-material';
 import axios from 'axios';
 import QuickBookingForm from './QuickBookingForm';
 
@@ -19,6 +19,8 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [bookingDialog, setBookingDialog] = useState({ open: false, doctor: null });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [doctorReviews, setDoctorReviews] = useState({});
+  const [expandedReviews, setExpandedReviews] = useState({});
 
   useEffect(() => {
     // Get patient's city from profile
@@ -83,6 +85,41 @@ function DoctorsByLocation({ user, onBookAppointment }) {
     console.log('Manual refresh triggered');
     if (selectedCity) {
       loadDoctors(selectedCity);
+    }
+  };
+
+  const loadReviewStats = async (doctorId) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews/doctor/${doctorId}/rating`);
+      if (response.ok) {
+        const ratingData = await response.json();
+        console.log(`Rating data for doctor ${doctorId}:`, ratingData);
+        return ratingData;
+      }
+    } catch (error) {
+      console.error('Error loading review stats:', error);
+    }
+    return { reviewCount: 0, finalRating: 4.5, hasReviews: false };
+  };
+
+  const loadDoctorReviews = async (doctorId) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews/doctor/${doctorId}`);
+      if (response.ok) {
+        const reviews = await response.json();
+        setDoctorReviews(prev => ({ ...prev, [doctorId]: reviews }));
+      }
+    } catch (error) {
+      console.error('Error loading doctor reviews:', error);
+    }
+  };
+
+  const toggleReviews = (doctorId) => {
+    setExpandedReviews(prev => ({ ...prev, [doctorId]: !prev[doctorId] }));
+    if (!doctorReviews[doctorId]) {
+      loadDoctorReviews(doctorId);
     }
   };
 
@@ -279,7 +316,28 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       console.log('Filtered doctors found:', filteredDoctors.length);
       console.log('==============================');
       
-      setDoctors(filteredDoctors);
+      // Load review stats for each doctor
+      console.log('=== LOADING REVIEW STATS FOR DOCTORS ===');
+      const doctorsWithReviews = await Promise.all(
+        filteredDoctors.map(async (doctor) => {
+          console.log(`Loading rating for doctor ${doctor._id} (${doctor.userId.name})`);
+          const ratingData = await loadReviewStats(doctor._id);
+          console.log(`Rating data received:`, ratingData);
+          const updatedDoctor = {
+            ...doctor,
+            reviewCount: ratingData.reviewCount,
+            finalRating: ratingData.finalRating,
+            adminBoost: ratingData.adminBoost,
+            hasReviews: ratingData.hasReviews
+          };
+          console.log(`Updated doctor:`, updatedDoctor);
+          return updatedDoctor;
+        })
+      );
+      console.log('=== FINAL DOCTORS WITH REVIEWS ===');
+      console.log(doctorsWithReviews);
+      
+      setDoctors(doctorsWithReviews);
 
     } catch (error) {
       console.error('Error loading doctors:', error);
@@ -538,12 +596,60 @@ function DoctorsByLocation({ user, onBookAppointment }) {
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1, 
+                        mb: 1,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.100', borderRadius: 1, p: 0.5, m: -0.5 }
+                      }}
+                      onClick={() => toggleReviews(doctor._id)}
+                    >
                       <Star color="warning" />
                       <Typography variant="body1" fontWeight="bold">
-                        {(doctor.finalRating || doctor.rating).toFixed(1)}/5
+                        {(doctor.finalRating || doctor.rating).toFixed(1)} ({doctor.reviewCount || 0} reviews)
                       </Typography>
+                      {expandedReviews[doctor._id] ? <ExpandLess /> : <ExpandMore />}
                     </Box>
+                    
+                    <Collapse in={expandedReviews[doctor._id]}>
+                      <Box sx={{ mt: 2, maxHeight: 200, overflowY: 'auto' }}>
+                        {doctorReviews[doctor._id] ? (
+                          doctorReviews[doctor._id].length === 0 ? (
+                            <Typography variant="body2" color="textSecondary">
+                              No reviews yet. Be the first to review this doctor!
+                            </Typography>
+                          ) : (
+                            doctorReviews[doctor._id].map((review) => (
+                              <Card key={review._id} sx={{ mb: 1, bgcolor: 'grey.50' }}>
+                                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                      {review.patientName || 'Anonymous'}
+                                    </Typography>
+                                    <Rating value={review.rating} readOnly size="small" />
+                                  </Box>
+                                  {review.review && (
+                                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                                      "{review.review}"
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" color="textSecondary">
+                                    {new Date(review.createdAt).toLocaleDateString()}
+                                  </Typography>
+                                </CardContent>
+                              </Card>
+                            ))
+                          )
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            Loading reviews...
+                          </Typography>
+                        )}
+                      </Box>
+                    </Collapse>
                     
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <LocationOn fontSize="small" color="action" />
@@ -599,6 +705,8 @@ function DoctorsByLocation({ user, onBookAppointment }) {
           }
         }}
       />
+      
+
     </Box>
   );
 }

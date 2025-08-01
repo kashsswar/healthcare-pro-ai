@@ -59,6 +59,45 @@ router.get('/doctor/:doctorId/stats', async (req, res) => {
   }
 });
 
+// Get complete rating info (reviews + admin boost)
+router.get('/doctor/:doctorId/rating', async (req, res) => {
+  try {
+    const Doctor = require('../models/Doctor');
+    
+    // Get reviews
+    const reviews = await Review.find({ doctorId: req.params.doctorId });
+    const reviewCount = reviews.length;
+    const reviewAverage = reviewCount > 0 
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount 
+      : 0;
+    
+    // Get admin boost
+    const doctor = await Doctor.findOne({ userId: req.params.doctorId });
+    const adminBoost = doctor?.adminBoostRating || 0;
+    
+    // Calculate final rating
+    let finalRating;
+    if (reviewCount > 0) {
+      // If reviews exist, use review average + admin boost
+      finalRating = Math.min(5.0, reviewAverage + adminBoost);
+    } else {
+      // If no reviews, use default 4.5 + admin boost
+      finalRating = Math.min(5.0, 4.5 + adminBoost);
+    }
+    
+    res.json({
+      reviewCount,
+      reviewAverage: parseFloat(reviewAverage.toFixed(1)),
+      adminBoost,
+      finalRating: parseFloat(finalRating.toFixed(1)),
+      hasReviews: reviewCount > 0
+    });
+  } catch (error) {
+    console.error('Rating calculation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get reviews by patient
 router.get('/patient/:patientId', async (req, res) => {
   try {

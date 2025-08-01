@@ -58,7 +58,10 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
 
       // Save to API database only
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const apiResponse = await fetch(`${apiUrl}/api/book-appointment`, {
+      console.log('Booking appointment to:', `${apiUrl}/api/appointments`);
+      console.log('Appointment data:', JSON.stringify(appointmentData, null, 2));
+      
+      const apiResponse = await fetch(`${apiUrl}/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appointmentData)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, Grid, Card, CardContent, Typography, Button, 
-  TextField, Chip, Rating, Box, InputAdornment 
+  TextField, Chip, Rating, Box, InputAdornment, Collapse 
 } from '@mui/material';
 import { Search, LocationOn } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,8 @@ function DoctorList({ user }) {
   const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
   const [bookingDialog, setBookingDialog] = useState({ open: false, doctor: null });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [expandedReviews, setExpandedReviews] = useState({});
+  const [doctorReviews, setDoctorReviews] = useState({});
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -73,6 +75,53 @@ function DoctorList({ user }) {
     filterDoctors();
   }, [searchTerm, doctors, filterDoctors]);
 
+  const loadRatingData = async (doctorId) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const url = `${apiUrl}/api/reviews/doctor/${doctorId}/stats`;
+      console.log(`Loading rating from: ${url}`);
+      
+      const response = await fetch(url);
+      console.log(`Response status: ${response.status}`);
+      
+      if (response.ok) {
+        const statsData = await response.json();
+        console.log(`Stats data:`, statsData);
+        
+        return {
+          reviewCount: statsData.reviewCount || 0,
+          finalRating: statsData.averageRating || 4.5,
+          adminBoost: 0,
+          hasReviews: (statsData.reviewCount || 0) > 0
+        };
+      }
+    } catch (error) {
+      console.error('Rating API error:', error);
+    }
+    
+    return { reviewCount: 0, finalRating: 4.5, hasReviews: false };
+  };
+
+  const loadDoctorReviews = async (doctorId) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/reviews/doctor/${doctorId}`);
+      if (response.ok) {
+        const reviews = await response.json();
+        setDoctorReviews(prev => ({ ...prev, [doctorId]: reviews }));
+      }
+    } catch (error) {
+      console.error('Error loading doctor reviews:', error);
+    }
+  };
+
+  const toggleReviews = (doctorId) => {
+    setExpandedReviews(prev => ({ ...prev, [doctorId]: !prev[doctorId] }));
+    if (!doctorReviews[doctorId]) {
+      loadDoctorReviews(doctorId);
+    }
+  };
+
   const loadDoctors = async (category = null) => {
     try {
       setLoading(true);
@@ -95,9 +144,37 @@ function DoctorList({ user }) {
       console.log('API response:', data);
       
       if (Array.isArray(data)) {
-        setDoctors(data);
-        setFilteredDoctors(data);
-        console.log(`Loaded ${data.length} doctors`);
+        console.log('=== LOADING RATING DATA FOR EACH DOCTOR ===');
+        console.log('Raw doctors data:', data);
+        
+        // Load rating data for each doctor
+        const doctorsWithRatings = await Promise.all(
+          data.map(async (doctor) => {
+            const doctorId = doctor.userId?._id || doctor._id;
+            console.log(`Doctor object:`, doctor);
+            console.log(`Doctor ID for rating: ${doctorId}`);
+            console.log(`Doctor name: ${doctor.userId?.name}`);
+            
+            const ratingData = await loadRatingData(doctorId);
+            console.log(`Rating data received for ${doctorId}:`, ratingData);
+            
+            const updatedDoctor = {
+              ...doctor,
+              reviewCount: ratingData.reviewCount || 0,
+              finalRating: ratingData.finalRating || 4.5,
+              adminBoost: ratingData.adminBoost || 0,
+              hasReviews: ratingData.hasReviews || false
+            };
+            
+            console.log(`Updated doctor ${doctorId}:`, updatedDoctor);
+            return updatedDoctor;
+          })
+        );
+        
+        console.log('Doctors with ratings:', doctorsWithRatings);
+        setDoctors(doctorsWithRatings);
+        setFilteredDoctors(doctorsWithRatings);
+        console.log(`Loaded ${doctorsWithRatings.length} doctors with ratings`);
       } else {
         console.error('API did not return array:', data);
         setDoctors([]);
@@ -210,13 +287,68 @@ function DoctorList({ user }) {
                   sx={{ mb: 2 }}
                 />
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    mb: 1,
+                    cursor: 'pointer',
+                    p: 0.5,
+                    borderRadius: 1,
+                    border: '1px solid transparent',
+                    '&:hover': { 
+                      bgcolor: 'primary.light', 
+                      borderColor: 'primary.main',
+                      transform: 'scale(1.02)'
+                    },
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => {
+                    const doctorId = doctor.userId?._id || doctor._id;
+                    console.log('Toggling reviews for doctor:', doctorId);
+                    toggleReviews(doctorId);
+                  }}
+                >
                   <Rating value={doctor.finalRating || doctor.rating} readOnly size="small" />
-                  <Typography variant="body2" sx={{ ml: 1 }}>
-                    {(doctor.finalRating || doctor.rating || 0).toFixed(1)} ({doctor.reviewCount || 0} reviews)
+                  <Typography variant="body2" sx={{ ml: 1, color: 'primary.main', fontWeight: 'bold' }}>
+                    {(doctor.finalRating || doctor.rating || 0).toFixed(1)} ({doctor.reviewCount || 0} reviews) 👆
                   </Typography>
-
                 </Box>
+                
+                <Collapse in={expandedReviews[doctor.userId?._id || doctor._id]}>
+                  <Box sx={{ mb: 2, maxHeight: 150, overflowY: 'auto', bgcolor: 'grey.50', p: 1, borderRadius: 1 }}>
+                    {doctorReviews[doctor.userId?._id || doctor._id] ? (
+                      doctorReviews[doctor.userId?._id || doctor._id].length === 0 ? (
+                        <Typography variant="body2" color="textSecondary">
+                          No reviews yet. Be the first to review!
+                        </Typography>
+                      ) : (
+                        doctorReviews[doctor.userId?._id || doctor._id].map((review) => (
+                          <Box key={review._id} sx={{ mb: 1, p: 1, bgcolor: 'white', borderRadius: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="subtitle2" fontWeight="bold">
+                                {review.patientName}
+                              </Typography>
+                              <Rating value={review.rating} readOnly size="small" />
+                            </Box>
+                            {review.review && (
+                              <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
+                                "{review.review}"
+                              </Typography>
+                            )}
+                            <Typography variant="caption" color="textSecondary">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        ))
+                      )
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        Loading reviews...
+                      </Typography>
+                    )}
+                  </Box>
+                </Collapse>
                 
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                   Experience: {doctor.experience} years

@@ -4,9 +4,9 @@ import {
 } from '@mui/material';
 import { ExpandMore, ExpandLess, Star } from '@mui/icons-material';
 
-function ReviewsList({ doctorId, patientId, userRole }) {
+function ReviewsList({ doctorId, patientId, userRole, showInDialog = false }) {
   const [reviews, setReviews] = useState([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(showInDialog ? true : false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -44,27 +44,35 @@ function ReviewsList({ doctorId, patientId, userRole }) {
     }
   };
 
-  if (!doctorId || reviews.length === 0) {
+  if (!doctorId) {
+    return null;
+  }
+  
+  if (reviews.length === 0 && !showInDialog) {
     return null;
   }
 
   return (
-    <Card sx={{ mb: 3 }}>
+    <Card sx={{ mb: showInDialog ? 0 : 3 }}>
       <CardContent>
-        <Button 
-          onClick={() => setExpanded(!expanded)}
-          startIcon={expanded ? <ExpandLess /> : <ExpandMore />}
-          sx={{ textTransform: 'none', p: 0 }}
-        >
-          <Typography variant="h6">
-            ⭐ Patient Reviews ({reviews.length})
-          </Typography>
-        </Button>
+        {!showInDialog && (
+          <Button 
+            onClick={() => setExpanded(!expanded)}
+            startIcon={expanded ? <ExpandLess /> : <ExpandMore />}
+            sx={{ textTransform: 'none', p: 0 }}
+          >
+            <Typography variant="h6">
+              ⭐ Patient Reviews ({reviews.length})
+            </Typography>
+          </Button>
+        )}
         
         <Collapse in={expanded}>
           <Box sx={{ mt: 2 }}>
             {loading ? (
               <Typography color="textSecondary">Loading reviews...</Typography>
+            ) : reviews.length === 0 ? (
+              <Typography color="textSecondary">No reviews yet. Be the first to review this doctor!</Typography>
             ) : (
               reviews.map((review) => (
                 <Card key={review._id} sx={{ mb: 2, bgcolor: 'grey.50' }}>
