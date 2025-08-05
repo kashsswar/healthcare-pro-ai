@@ -17,7 +17,10 @@ router.get('/:patientId', async (req, res) => {
       phone: user.phone,
       profile: user.profile || {
         age: '',
+        dateOfBirth: '',
         gender: '',
+        flatNo: '',
+        street: '',
         city: '',
         state: '',
         medicalHistory: []
@@ -35,26 +38,36 @@ router.get('/:patientId', async (req, res) => {
 // Update patient profile
 router.put('/:patientId', async (req, res) => {
   try {
-    const { name, phone, age, gender, city, state, medicalHistory } = req.body;
+    console.log('Updating patient profile with data:', req.body);
+    const { name, phone, age, dateOfBirth, gender, flatNo, street, city, state, medicalHistory } = req.body;
+    
+    const profileData = {
+      age: age || '',
+      dateOfBirth: dateOfBirth || '',
+      gender: gender || '',
+      flatNo: flatNo || '',
+      street: street || '',
+      city: city || '',
+      state: state || '',
+      medicalHistory: medicalHistory ? (typeof medicalHistory === 'string' ? medicalHistory.split(',').map(h => h.trim()) : medicalHistory) : []
+    };
+    
+    console.log('Profile data to save:', profileData);
     
     const user = await User.findByIdAndUpdate(
       req.params.patientId,
       {
         name,
         phone,
-        profile: {
-          age,
-          gender,
-          city,
-          state,
-          medicalHistory: medicalHistory ? medicalHistory.split(',').map(h => h.trim()) : []
-        }
+        profile: profileData
       },
       { new: true }
     );
     
+    console.log('Updated user profile:', user.profile);
     res.json(user);
   } catch (error) {
+    console.error('Error updating patient profile:', error);
     res.status(500).json({ message: error.message });
   }
 });

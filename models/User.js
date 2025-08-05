@@ -9,7 +9,12 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['patient', 'doctor'], default: 'patient' },
   profile: {
     age: Number,
+    dateOfBirth: String,
     gender: String,
+    flatNo: String,
+    street: String,
+    city: String,
+    state: String,
     address: String,
     medicalHistory: [String],
     allergies: [String]

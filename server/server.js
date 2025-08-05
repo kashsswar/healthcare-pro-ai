@@ -7,6 +7,7 @@ app.use(express.json());
 
 // In-memory storage
 let doctors = [];
+let patients = [];
 let doctorReviews = [];
 let adminBoosts = [];
 let appointments = [];
@@ -121,6 +122,25 @@ app.delete('/api/appointments/:appointmentId', (req, res) => {
   
   const cancelled = appointments.splice(index, 1)[0];
   res.json({ message: 'Appointment cancelled', appointment: cancelled });
+});
+
+// Patient profile routes
+app.get('/api/patient-profile/:patientId', (req, res) => {
+  const patient = patients.find(p => p._id === req.params.patientId);
+  if (!patient) {
+    return res.status(404).json({ message: 'Patient not found' });
+  }
+  res.json(patient);
+});
+
+app.put('/api/patient-profile/:patientId', (req, res) => {
+  const patientIndex = patients.findIndex(p => p._id === req.params.patientId);
+  if (patientIndex === -1) {
+    patients.push({ _id: req.params.patientId, ...req.body });
+  } else {
+    patients[patientIndex] = { ...patients[patientIndex], ...req.body };
+  }
+  res.json({ message: 'Patient profile updated successfully' });
 });
 
 const PORT = process.env.PORT || 5000;

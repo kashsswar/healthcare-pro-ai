@@ -925,7 +925,7 @@ function Dashboard({ user, socket }) {
                             variant="outlined"
                             color="primary"
                             size="small"
-                            onClick={() => setReviewDialog({ open: true, doctor: appointment.doctor })}
+                            onClick={() => setReviewDialog({ open: true, doctor: { ...appointment.doctor, _id: appointment.doctorId } })}
                             sx={{ fontSize: '0.75rem', ml: 1 }}
                           >
                             ⭐ Review
@@ -948,29 +948,43 @@ function Dashboard({ user, socket }) {
             <CardContent>
               <Typography variant="h6" gutterBottom>Recent Activity</Typography>
               <List>
-                {appointments.slice(0, 5).map((appointment) => (
-                  <ListItem key={appointment._id} divider>
-                    <ListItemText
-                      primary={`Consultation with Dr. ${appointment.doctorName || appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor'}`}
-                      secondary={new Date(appointment.scheduledTime).toLocaleDateString()}
-                    />
-                    <Chip 
-                      label={appointment.status} 
-                      color={getStatusColor(appointment.status)}
-                      size="small"
-                    />
-                    {appointment.status === 'completed' && (
-                      <Button
-                        variant="text"
+                {appointments.slice(0, 5).map((appointment) => {
+                  const isPast = new Date(appointment.scheduledTime) < new Date();
+                  const displayStatus = appointment.status === 'scheduled' && isPast ? 'completed' : appointment.status;
+                  
+                  return (
+                    <ListItem key={appointment._id} divider>
+                      <ListItemText
+                        primary={`Consultation with Dr. ${appointment.doctorName || appointment.doctor?.userId?.name || appointment.doctor?.name || 'Doctor'}`}
+                        secondary={new Date(appointment.scheduledTime).toLocaleDateString()}
+                      />
+                      <Chip 
+                        label={displayStatus} 
+                        color={getStatusColor(displayStatus)}
                         size="small"
-                        onClick={() => setReviewDialog({ open: true, doctor: appointment.doctor })}
-                        sx={{ ml: 1, fontSize: '0.75rem' }}
-                      >
-                        ⭐ Rate Doctor
-                      </Button>
-                    )}
-                  </ListItem>
-                ))}
+                      />
+                      {displayStatus === 'completed' && (
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={() => {
+                            console.log('Appointment for review:', appointment);
+                            setReviewDialog({ 
+                              open: true, 
+                              doctor: { 
+                                ...appointment.doctor, 
+                                _id: appointment.doctorId || appointment.doctor?._id || appointment.doctor?.userId?._id
+                              } 
+                            });
+                          }}
+                          sx={{ ml: 1, fontSize: '0.75rem' }}
+                        >
+                          ⭐ Rate Doctor
+                        </Button>
+                      )}
+                    </ListItem>
+                  );
+                })}
               </List>
             </CardContent>
           </Card>

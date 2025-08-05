@@ -23,27 +23,35 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   const [expandedReviews, setExpandedReviews] = useState({});
 
   useEffect(() => {
-    // Get patient's city from profile
-    const profileKey = `patient_${user._id}_profile`;
-    const patientProfile = JSON.parse(localStorage.getItem(profileKey) || '{}');
-    const cityFromProfile = patientProfile.city; // No default - use actual city only
-    
-    console.log('=== PATIENT PROFILE DEBUG ===');
-    console.log('Profile key:', profileKey);
-    console.log('Patient profile:', patientProfile);
-    console.log('Patient city from profile:', cityFromProfile);
-    console.log('User ID:', user._id);
-    console.log('============================');
-    
-    if (cityFromProfile) {
-      const cleanCity = cityFromProfile.trim();
-      setPatientCity(cleanCity);
-      setSelectedCity(cleanCity);
-      loadDoctors(cleanCity);
-    } else {
-      setLoading(false); // Stop loading if no city in profile
-    }
+    loadPatientProfile();
   }, [user._id]);
+  
+  const loadPatientProfile = async () => {
+    try {
+      const userId = user._id || user.id;
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`);
+      
+      if (response.ok) {
+        const patientData = await response.json();
+        const cityFromProfile = patientData.profile?.city;
+        
+        if (cityFromProfile) {
+          const cleanCity = cityFromProfile.trim();
+          setPatientCity(cleanCity);
+          setSelectedCity(cleanCity);
+          loadDoctors(cleanCity);
+        } else {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading patient profile:', error);
+      setLoading(false);
+    }
+  };
   
   // Reload doctors when localStorage changes (doctor profile updates)
   useEffect(() => {
@@ -361,10 +369,11 @@ function DoctorsByLocation({ user, onBookAppointment }) {
   const handleCustomCitySearch = () => {
     if (customCity.trim()) {
       const searchCity = customCity.trim();
-      setSelectedCity(searchCity); // Update selected city to custom city
-      setShowCustomInput(false); // Hide custom input after search
+      setSelectedCity(searchCity);
+      setShowCustomInput(false);
+      setShowOtherCities(false); // Hide dropdown after custom search
       loadDoctors(searchCity);
-      setCustomCity(''); // Clear custom input field
+      setCustomCity('');
     }
   };
 
@@ -389,16 +398,7 @@ function DoctorsByLocation({ user, onBookAppointment }) {
 
   return (
     <Box>
-      {/* Debug Panel */}
-      <Card sx={{ mb: 2, bgcolor: 'grey.100' }}>
-        <CardContent>
-          <Typography variant="subtitle2" gutterBottom>🔧 Debug Info:</Typography>
-          <Typography variant="body2">Patient City: {patientCity || 'Not set'}</Typography>
-          <Typography variant="body2">Selected City: {selectedCity || 'Not set'}</Typography>
-          <Typography variant="body2">Available Cities: {availableCities.join(', ') || 'None'}</Typography>
-          <Typography variant="body2">Total Doctors Found: {doctors.length}</Typography>
-        </CardContent>
-      </Card>
+
       
       {/* Location Controls */}
       <Card sx={{ mb: 3 }}>
@@ -511,69 +511,8 @@ function DoctorsByLocation({ user, onBookAppointment }) {
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="h6">No doctors found in {selectedCity}</Typography>
           <Typography variant="body2">
-            We don't have any doctors available in this city yet. 
-            Try selecting from available cities: {availableCities.join(', ')}
+            We don't have any doctors available in this city yet.
           </Typography>
-          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-            <Button 
-              variant="contained"
-              onClick={() => {
-                if (availableCities.length > 0) {
-                  const nearestCity = availableCities[0];
-                  setSelectedCity(nearestCity);
-                  loadDoctors(nearestCity);
-                }
-              }}
-            >
-              Show doctors in {availableCities[0] || 'nearby cities'}
-            </Button>
-            <Button 
-              variant="outlined"
-              onClick={() => {
-                // Show all doctors for debugging
-                console.log('Showing all doctors for debugging');
-                const allDoctorsTest = [];
-                
-                // Get all doctor profiles
-                for (let i = 0; i < localStorage.length; i++) {
-                  const key = localStorage.key(i);
-                  if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
-                    try {
-                      const doctorProfile = JSON.parse(localStorage.getItem(key));
-                      const doctorId = key.replace('doctor_', '').replace('_profile', '');
-                      console.log('Found doctor profile:', doctorProfile);
-                      
-                      if (doctorProfile.specialization) {
-                        allDoctorsTest.push({
-                          _id: doctorId,
-                          userId: { name: doctorProfile.name || 'Doctor' },
-                          specialization: doctorProfile.specialization,
-                          experience: parseInt(doctorProfile.experience) || 5,
-                          consultationFee: parseInt(doctorProfile.consultationFee) || 500,
-                          rating: 4.5,
-                          finalRating: 4.5,
-                          qualification: ['MBBS'],
-                          isVerified: true,
-                          location: { 
-                            city: doctorProfile.city || 'Unknown', 
-                            address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city || 'Unknown'}`.trim()
-                          },
-                          availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
-                        });
-                      }
-                    } catch (error) {
-                      console.log('Error parsing doctor profile:', error);
-                    }
-                  }
-                }
-                
-                console.log('All doctors found:', allDoctorsTest);
-                setDoctors(allDoctorsTest);
-              }}
-            >
-              Show All Doctors (Debug)
-            </Button>
-          </Box>
         </Alert>
       ) : (
         <Grid container spacing={3}>

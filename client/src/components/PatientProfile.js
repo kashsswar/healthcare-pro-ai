@@ -36,22 +36,38 @@ function PatientProfile({ user, onUpdate }) {
       const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`);
       if (response.ok) {
         const patientData = await response.json();
-        setProfile({
+        console.log('Loaded patient data:', patientData);
+        console.log('Profile object:', patientData.profile);
+        console.log('Address fields:', {
+          flatNo: patientData.profile?.flatNo,
+          street: patientData.profile?.street,
+          city: patientData.profile?.city,
+          state: patientData.profile?.state,
+          dateOfBirth: patientData.profile?.dateOfBirth
+        });
+        const newProfile = {
           name: patientData.name || user.name || '',
           phone: patientData.phone || user.phone || '',
           age: patientData.profile?.age || '',
+          dateOfBirth: patientData.profile?.dateOfBirth || '',
           gender: patientData.profile?.gender || '',
+          flatNo: patientData.profile?.flatNo || '',
+          street: patientData.profile?.street || '',
           city: patientData.profile?.city || '',
           state: patientData.profile?.state || '',
           medicalHistory: patientData.profile?.medicalHistory?.join(', ') || ''
-        });
+        };
+        console.log('Setting profile to:', newProfile);
+        setProfile(newProfile);
       } else {
-        // No profile exists yet
         setProfile({
           name: user.name || '',
           phone: user.phone || '',
           age: '',
+          dateOfBirth: '',
           gender: '',
+          flatNo: '',
+          street: '',
           city: '',
           state: '',
           medicalHistory: ''
@@ -92,6 +108,8 @@ function PatientProfile({ user, onUpdate }) {
       const userId = user._id || user.id;
       if (!userId) return;
       
+      console.log('Saving profile data:', tempProfile);
+      
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`, {
         method: 'PUT',
@@ -100,19 +118,15 @@ function PatientProfile({ user, onUpdate }) {
       });
       
       if (response.ok) {
-        console.log('Patient profile saved:', tempProfile);
-        console.log('Profile data being sent:', {
-          age: tempProfile.age,
-          gender: tempProfile.gender,
-          city: tempProfile.city,
-          state: tempProfile.state,
-          medicalHistory: tempProfile.medicalHistory
-        });
+        const savedData = await response.json();
+        console.log('Profile saved successfully:', savedData);
         setProfile(tempProfile);
-        if (onUpdate) onUpdate(tempProfile);
         setEditOpen(false);
         alert('Profile updated successfully!');
+        loadProfile(); // Reload from API
       } else {
+        const errorText = await response.text();
+        console.error('Save failed:', errorText);
         alert('Failed to save profile. Please try again.');
       }
     } catch (error) {
@@ -148,30 +162,29 @@ function PatientProfile({ user, onUpdate }) {
             </Button>
           </Box>
 
-          {profile.dateOfBirth || profile.gender ? (
-            <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>📅 DOB:</strong> {profile.dateOfBirth} (Age: {profile.age})
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>👤 Gender:</strong> {profile.gender}
-              </Typography>
-              <Typography variant="body1" color="success.contrastText">
-                <strong>📱 Phone:</strong> {profile.phone}
-              </Typography>
-              {(profile.flatNo || profile.street || profile.city || profile.state) && (
-                <Typography variant="body1" color="success.contrastText">
-                  <strong>🏠 Address:</strong> {profile.flatNo} {profile.street}, {profile.city}, {profile.state}
-                </Typography>
-              )}
-            </Box>
-          ) : (
-            <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+            <Typography variant="body1" color="success.contrastText">
+              <strong>📅 DOB:</strong> {profile.dateOfBirth || 'Not set'} {profile.age ? `(Age: ${profile.age})` : ''}
+            </Typography>
+            <Typography variant="body1" color="success.contrastText">
+              <strong>👤 Gender:</strong> {profile.gender || 'Not set'}
+            </Typography>
+            <Typography variant="body1" color="success.contrastText">
+              <strong>📱 Phone:</strong> {profile.phone || 'Not set'}
+            </Typography>
+            <Typography variant="body1" color="success.contrastText">
+              <strong>🏠 Address:</strong> {[profile.flatNo, profile.street, profile.city, profile.state].filter(Boolean).join(', ') || 'Not set'}
+            </Typography>
+          </Box>
+          
+          {!(profile.dateOfBirth || profile.gender || profile.city) && (
+            <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1, mt: 2 }}>
               <Typography variant="body1" color="info.contrastText">
                 📝 Please complete your profile by clicking "Edit Profile" above.
               </Typography>
             </Box>
           )}
+
         </CardContent>
       </Card>
 

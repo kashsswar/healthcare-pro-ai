@@ -19,7 +19,7 @@ function PatientReview({ open, onClose, doctor, patient, onReviewSubmit }) {
     setSubmitting(true);
     try {
       const reviewData = {
-        doctorId: doctor.userId?._id || doctor._id,
+        doctorId: doctor.doctorId || doctor.userId?._id || doctor._id,
         patientId: patient._id || patient.id,
         patientName: patient.name,
         rating: rating,
