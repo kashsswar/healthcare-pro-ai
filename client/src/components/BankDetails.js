@@ -15,17 +15,23 @@ function BankDetails({ open, onClose, doctor }) {
 
   const handleSave = async () => {
     try {
-      await fetch('/api/doctors/bank-details', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/bank-details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          doctorId: doctor._id,
+          userId: doctor._id || doctor.id,
+          userType: 'doctor',
           ...bankInfo
         })
       });
       
-      alert('Bank details saved! Payments will be auto-transferred (80% to you, 20% platform fee)');
-      onClose();
+      if (response.ok) {
+        alert('Bank details saved! Payments will be auto-transferred (88% to you, 12% platform fee)');
+        onClose();
+      } else {
+        throw new Error('Failed to save');
+      }
     } catch (error) {
       alert('Failed to save bank details');
     }

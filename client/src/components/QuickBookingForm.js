@@ -36,12 +36,33 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
       console.log('DoctorId being used in booking:', doctor.userId?._id || doctor._id);
       console.log('Patient ID:', patient._id || patient.id);
       
+      // Create Stripe payment intent first
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const paymentResponse = await fetch(`${apiUrl}/api/stripe/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: doctor.consultationFee,
+          doctorId: doctor.userId?._id || doctor._id,
+          patientId: patient._id || patient.id
+        })
+      });
+      
+      if (!paymentResponse.ok) {
+        throw new Error('Payment setup failed');
+      }
+      
+      const { clientSecret } = await paymentResponse.json();
+      
+      // For now, simulate payment success (you'll integrate Stripe Elements later)
       const appointmentData = {
         patientId: patient._id || patient.id,
         doctorId: doctor.userId?._id || doctor._id,
         scheduledTime: new Date(`${selectedDate}T${selectedTime}`).toISOString(),
         symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
         consultationFee: doctor.consultationFee,
+        paymentStatus: 'paid',
+        paymentMethod: 'stripe',
         patient: {
           name: patient.name,
           email: patient.email,
