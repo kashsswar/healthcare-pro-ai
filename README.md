@@ -7,6 +7,7 @@ A modern healthcare platform connecting patients with doctors.
 - 12+ medical specializations
 - Real-time availability tracking
 - Admin dashboard
+- Real doctor profiles only (no mock data)
 
 ## Tech Stack
 - **Backend**: Node.js, Express, MongoDB

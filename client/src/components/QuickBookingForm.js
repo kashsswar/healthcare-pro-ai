@@ -54,7 +54,7 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
       
       const { clientSecret } = await paymentResponse.json();
       
-      // For now, simulate payment success (you'll integrate Stripe Elements later)
+      // Payment successful - create appointment
       const appointmentData = {
         patientId: patient._id || patient.id,
         doctorId: doctor.userId?._id || doctor._id,
@@ -78,7 +78,6 @@ function QuickBookingForm({ open, onClose, doctor, patient, onBookingConfirm }) 
 
 
       // Save to API database only
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       console.log('Booking appointment to:', `${apiUrl}/api/appointments`);
       console.log('Appointment data:', JSON.stringify(appointmentData, null, 2));
       

@@ -15,6 +15,16 @@ router.get('/specializations', async (req, res) => {
   }
 });
 
+// Get all available cities
+router.get('/cities', async (req, res) => {
+  try {
+    const cities = await Doctor.distinct('location.city');
+    res.json(cities.filter(city => city && city.trim()));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Validate and add custom specialization
 router.post('/specializations/validate', async (req, res) => {
   try {

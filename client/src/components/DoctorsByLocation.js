@@ -135,192 +135,34 @@ function DoctorsByLocation({ user, onBookAppointment }) {
     try {
       setLoading(true);
       
-      // Get real doctors from localStorage profiles
-      const realDoctors = [];
+      // Get doctors from API only
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/doctors?location=${encodeURIComponent(city)}`);
       
-      // Check for saved doctor profiles
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
-          try {
-            const doctorProfile = JSON.parse(localStorage.getItem(key));
-            const doctorId = key.replace('doctor_', '').replace('_profile', '');
-            
-            if (doctorProfile.city && doctorProfile.specialization) {
-              // Get admin rating boost
-              const adminBoosts = JSON.parse(localStorage.getItem('adminRatingBoosts') || '[]');
-              const doctorBoosts = JSON.parse(localStorage.getItem('doctorBoosts') || '[]');
-              const boost = adminBoosts.find(b => b.doctorId === doctorId) || 
-                           doctorBoosts.find(b => b.doctorId === doctorId) || 
-                           { boostAmount: 0 };
-              
-              const baseRating = 4.5;
-              const finalRating = Math.min(5.0, baseRating + (boost.boostAmount || 0));
-              
-              realDoctors.push({
-                _id: doctorId,
-                userId: { name: doctorProfile.name || 'Doctor' },
-                specialization: doctorProfile.specialization,
-                experience: parseInt(doctorProfile.experience) || 5,
-                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
-                rating: baseRating,
-                finalRating: finalRating,
-                adminBoost: boost.boostAmount || 0,
-                qualification: doctorProfile.qualification?.split(',') || ['MBBS'],
-                isVerified: true,
-                location: { 
-                  city: doctorProfile.city.trim(), 
-                  address: `${doctorProfile.flatNo || ''} ${doctorProfile.street || ''}, ${doctorProfile.city}`.trim().replace(/^,\s*/, '')
-                },
-                availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
-              });
-            }
-          } catch (error) {
-            console.log('Error parsing doctor profile:', error);
-          }
-        }
+      let doctors = [];
+      if (response.ok) {
+        doctors = await response.json();
       }
       
-      // Mock doctors with different cities - fallback data
-      const mockDoctors = [
-        // Mumbai doctors
-        {
-          _id: 'doc1',
-          userId: { name: 'Rajesh Kumar' },
-          specialization: 'General Medicine',
-          experience: 10,
-          consultationFee: 500,
-          rating: 4.5,
-          finalRating: 4.5,
-          qualification: ['MBBS', 'MD'],
-          isVerified: true,
-          location: { city: 'Mumbai', address: 'Andheri West, Mumbai' },
-          availability: { isAvailable: true, timings: { from: '09:00', to: '17:00' } }
-        },
-        {
-          _id: 'doc2',
-          userId: { name: 'Priya Sharma' },
-          specialization: 'Cardiology',
-          experience: 15,
-          consultationFee: 800,
-          rating: 4.8,
-          finalRating: 4.8,
-          qualification: ['MBBS', 'MD Cardiology'],
-          isVerified: true,
-          location: { city: 'Mumbai', address: 'Bandra, Mumbai' },
-          availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
-        },
-        {
-          _id: 'doc5',
-          userId: { name: 'Neha Joshi' },
-          specialization: 'Gynecology',
-          experience: 12,
-          consultationFee: 650,
-          rating: 4.7,
-          finalRating: 4.7,
-          qualification: ['MBBS', 'MD Gynecology'],
-          isVerified: true,
-          location: { city: 'Mumbai', address: 'Powai, Mumbai' },
-          availability: { isAvailable: true, timings: { from: '09:30', to: '17:30' } }
-        },
-        // Delhi doctors
-        {
-          _id: 'doc3',
-          userId: { name: 'Amit Patel' },
-          specialization: 'Dermatology',
-          experience: 8,
-          consultationFee: 600,
-          rating: 4.3,
-          finalRating: 4.3,
-          qualification: ['MBBS', 'MD Dermatology'],
-          isVerified: true,
-          location: { city: 'Delhi', address: 'Connaught Place, Delhi' },
-          availability: { isAvailable: true, timings: { from: '11:00', to: '19:00' } }
-        },
-        {
-          _id: 'doc6',
-          userId: { name: 'Vikram Singh' },
-          specialization: 'Orthopedics',
-          experience: 18,
-          consultationFee: 900,
-          rating: 4.9,
-          finalRating: 4.9,
-          qualification: ['MBBS', 'MS Orthopedics'],
-          isVerified: true,
-          location: { city: 'Delhi', address: 'Lajpat Nagar, Delhi' },
-          availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
-        },
-        // Bangalore doctors
-        {
-          _id: 'doc4',
-          userId: { name: 'Sunita Reddy' },
-          specialization: 'Pediatrics',
-          experience: 12,
-          consultationFee: 700,
-          rating: 4.6,
-          finalRating: 4.6,
-          qualification: ['MBBS', 'MD Pediatrics'],
-          isVerified: true,
-          location: { city: 'Bangalore', address: 'Koramangala, Bangalore' },
-          availability: { isAvailable: true, timings: { from: '09:00', to: '16:00' } }
-        },
-        // Pune doctors
-        {
-          _id: 'doc7',
-          userId: { name: 'Ravi Deshmukh' },
-          specialization: 'General Medicine',
-          experience: 14,
-          consultationFee: 550,
-          rating: 4.4,
-          finalRating: 4.4,
-          qualification: ['MBBS', 'MD'],
-          isVerified: true,
-          location: { city: 'Pune', address: 'Koregaon Park, Pune' },
-          availability: { isAvailable: true, timings: { from: '08:00', to: '16:00' } }
-        },
-        {
-          _id: 'doc8',
-          userId: { name: 'Kavita Joshi' },
-          specialization: 'Gynecology',
-          experience: 16,
-          consultationFee: 750,
-          rating: 4.7,
-          finalRating: 4.7,
-          qualification: ['MBBS', 'MD Gynecology'],
-          isVerified: true,
-          location: { city: 'Pune', address: 'Baner, Pune' },
-          availability: { isAvailable: true, timings: { from: '10:00', to: '18:00' } }
-        }
-      ];
-
-      // Combine real doctors with mock doctors
-      const allDoctors = [...realDoctors, ...mockDoctors];
-      
-      // Get unique cities
-      const cities = [...new Set(allDoctors.map(d => d.location.city))];
+      // Get all available cities from API
+      const citiesResponse = await fetch(`${apiUrl}/api/doctors/cities`);
+      let cities = [];
+      if (citiesResponse.ok) {
+        cities = await citiesResponse.json();
+      }
       setAvailableCities(cities);
 
-      // Filter doctors by selected city (improved matching)
+      // Filter doctors by selected city
       const searchCity = city.toLowerCase().trim();
-      const filteredDoctors = allDoctors.filter(d => {
-        const doctorCity = d.location.city.toLowerCase().trim();
+      const filteredDoctors = doctors.filter(d => {
+        const doctorCity = (d.location?.city || '').toLowerCase().trim();
         return doctorCity === searchCity;
       });
       
       console.log('=== DEBUGGING CITY FILTER ===');
       console.log('Search city:', searchCity);
-      console.log('Real doctors found:', realDoctors.length);
-      console.log('Mock doctors available:', mockDoctors.length);
-      console.log('Total doctors before filter:', allDoctors.length);
-      console.log('Available cities:', [...new Set(allDoctors.map(d => d.location.city.toLowerCase().trim()))]);
-      console.log('Real doctors by city:');
-      realDoctors.forEach(d => {
-        console.log(`  - REAL Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
-      });
-      console.log('Mock doctors by city:');
-      mockDoctors.forEach(d => {
-        console.log(`  - MOCK Dr. ${d.userId.name}: ${d.location.city} (${d.location.city.toLowerCase().trim()})`);  
-      });
+      console.log('API doctors found:', doctors.length);
+      console.log('Available cities:', cities);
       console.log('Filtered doctors found:', filteredDoctors.length);
       console.log('==============================');
       
@@ -371,7 +213,7 @@ function DoctorsByLocation({ user, onBookAppointment }) {
       const searchCity = customCity.trim();
       setSelectedCity(searchCity);
       setShowCustomInput(false);
-      setShowOtherCities(false); // Hide dropdown after custom search
+      setShowOtherCities(false);
       loadDoctors(searchCity);
       setCustomCity('');
     }

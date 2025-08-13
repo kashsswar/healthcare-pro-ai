@@ -16,62 +16,66 @@ function LocalDoctorsList({ user, onBookAppointment }) {
 
   const loadPatientLocation = async () => {
     try {
+      const userId = user._id || user.id;
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/patient-profile/${user._id}`);
+      const response = await fetch(`${apiUrl}/api/patient-profile/${userId}`);
       
       if (response.ok) {
-        const profile = await response.json();
-        if (profile.city) {
-          setPatientLocation({ city: profile.city, state: profile.state || '' });
-        }
-      } else {
-        // Fallback to localStorage if API fails
-        const savedProfile = localStorage.getItem(`patient_${user._id}_profile`);
-        if (savedProfile) {
-          const profile = JSON.parse(savedProfile);
-          if (profile.city) {
-            setPatientLocation({ city: profile.city, state: profile.state || '' });
-          }
+        const patientData = await response.json();
+        if (patientData.profile?.city) {
+          setPatientLocation({ 
+            city: patientData.profile.city, 
+            state: patientData.profile.state || '' 
+          });
         }
       }
     } catch (error) {
       console.error('Error loading patient location:', error);
-      // Fallback to localStorage
-      const savedProfile = localStorage.getItem(`patient_${user._id}_profile`);
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        if (profile.city) {
-          setPatientLocation({ city: profile.city, state: profile.state || '' });
-        }
-      }
     }
   };
 
   const loadLocalDoctors = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/doctors`);
+      // Get real doctors from localStorage profiles (only registered doctors)
+      const realDoctors = [];
       
-      if (response.ok) {
-        const allDoctors = await response.json();
-        console.log('All doctors from API:', allDoctors);
-        
-        if (patientLocation) {
-          // Filter doctors from same city (case insensitive)
-          const filtered = allDoctors.filter(doctor => {
-            const doctorCity = (doctor.city || '').toLowerCase().trim();
-            const patientCity = patientLocation.city.toLowerCase().trim();
-            return doctorCity === patientCity;
-          });
-          
-          console.log('Filtered doctors for', patientLocation.city, ':', filtered);
-          setLocalDoctors(filtered);
-        } else {
-          setLocalDoctors(allDoctors);
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('doctor_') && key.endsWith('_profile')) {
+          try {
+            const doctorProfile = JSON.parse(localStorage.getItem(key));
+            const doctorId = key.replace('doctor_', '').replace('_profile', '');
+            
+            // Only include doctors with complete profiles (name, city, specialization)
+            if (doctorProfile.city && doctorProfile.specialization && doctorProfile.name && doctorProfile.name !== 'Doctor') {
+              realDoctors.push({
+                _id: doctorId,
+                name: doctorProfile.name,
+                userId: { name: doctorProfile.name },
+                specialization: doctorProfile.specialization,
+                experience: parseInt(doctorProfile.experience) || 5,
+                consultationFee: parseInt(doctorProfile.consultationFee) || 500,
+                rating: 4.5,
+                finalRating: 4.5,
+                city: doctorProfile.city.trim(),
+                state: doctorProfile.state || ''
+              });
+            }
+          } catch (error) {
+            console.log('Error parsing doctor profile:', error);
+          }
         }
+      }
+      
+      if (patientLocation) {
+        const filtered = realDoctors.filter(doctor => {
+          const doctorCity = doctor.city.toLowerCase().trim();
+          const patientCity = patientLocation.city.toLowerCase().trim();
+          return doctorCity === patientCity;
+        });
+        setLocalDoctors(filtered);
       } else {
-        console.error('Failed to load doctors from API');
-        setLocalDoctors([]);
+        setLocalDoctors(realDoctors);
       }
     } catch (error) {
       console.error('Error loading doctors:', error);
@@ -106,8 +110,8 @@ function LocalDoctorsList({ user, onBookAppointment }) {
         </Box>
 
         {localDoctors.length === 0 ? (
-          <Alert severity="warning">
-            No doctors found in your city. Change location and see doctors list in Find Doctors tab.
+          <Alert severity="info">
+            No doctors found in your city. Check Find Doctors tab to see doctors in other cities.
           </Alert>
         ) : (
           <List>
