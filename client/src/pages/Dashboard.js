@@ -20,6 +20,8 @@ import DoctorsByLocation from '../components/DoctorsByLocation';
 import LocalDoctorsList from '../components/LocalDoctorsList';
 import BankDetails from '../components/BankDetails';
 import PatientBankDetails from '../components/PatientBankDetails';
+import PatientBankSetup from '../components/PatientBankSetup';
+import PatientWallet from '../components/PatientWallet';
 import DoctorPayouts from '../components/DoctorPayouts';
 import PatientPaymentHistory from '../components/PatientPaymentHistory';
 
@@ -32,6 +34,7 @@ function Dashboard({ user, socket }) {
   const [reviewDialog, setReviewDialog] = useState({ open: false, doctor: null });
   const [bankDialog, setBankDialog] = useState(false);
   const [patientBankDialog, setPatientBankDialog] = useState(false);
+  const [patientBankSetupDialog, setPatientBankSetupDialog] = useState(false);
   const [recentListExpanded, setRecentListExpanded] = useState(false);
   const [todayQueueExpanded, setTodayQueueExpanded] = useState(false);
   const navigate = useNavigate();
@@ -795,6 +798,13 @@ function Dashboard({ user, socket }) {
           </Grid>
         )}
         
+        {/* Patient Wallet - Only show for patients */}
+        {user.role === 'patient' && (
+          <Grid item xs={12}>
+            <PatientWallet user={user} />
+          </Grid>
+        )}
+        
         {/* Patient Payment History - Only show for patients */}
         {user.role === 'patient' && (
           <Grid item xs={12}>
@@ -848,8 +858,16 @@ function Dashboard({ user, socket }) {
                   variant="outlined" 
                   onClick={() => setPatientBankDialog(true)}
                   fullWidth
+                  sx={{ mb: 1 }}
                 >
                   💳 Payment Method
+                </Button>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setPatientBankSetupDialog(true)}
+                  fullWidth
+                >
+                  🏦 Bank Account Setup
                 </Button>
               </Box>
             </CardContent>
@@ -1012,6 +1030,13 @@ function Dashboard({ user, socket }) {
           localStorage.setItem(`patient_${user.id}_bank`, JSON.stringify(bankInfo));
           alert('Payment method saved successfully!');
         }}
+      />
+      
+      {/* Patient Bank Setup Dialog */}
+      <PatientBankSetup
+        open={patientBankSetupDialog}
+        onClose={() => setPatientBankSetupDialog(false)}
+        patient={user}
       />
     </Container>
   );

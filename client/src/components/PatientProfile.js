@@ -3,8 +3,9 @@ import {
   Card, CardContent, Typography, TextField, Button, 
   Box, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { Person, Save, Edit } from '@mui/icons-material';
+import { Person, Save, Edit, AccountBalance } from '@mui/icons-material';
 import PatientReviewHistory from './PatientReviewHistory';
+import PatientBankSetup from './PatientBankSetup';
 
 function PatientProfile({ user, onUpdate }) {
   const [profile, setProfile] = useState({
@@ -19,13 +20,49 @@ function PatientProfile({ user, onUpdate }) {
   });
   const [editOpen, setEditOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({});
+  const [bankSetupOpen, setBankSetupOpen] = useState(false);
+  const [bankDetails, setBankDetails] = useState(null);
 
   useEffect(() => {
     const userId = user._id || user.id;
     if (userId) {
       loadProfile();
+      loadBankDetails();
     }
+    
+    // Listen for bank details updates
+    const handleBankUpdate = () => {
+      loadBankDetails();
+    };
+    window.addEventListener('bankDetailsUpdated', handleBankUpdate);
+    
+    return () => {
+      window.removeEventListener('bankDetailsUpdated', handleBankUpdate);
+    };
   }, [user._id, user.id]);
+  
+  const loadBankDetails = async () => {
+    try {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      console.log('Loading bank details for user:', userId);
+      const response = await fetch(`${apiUrl}/api/bank-details/patient/${userId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Bank details response:', data);
+        setBankDetails(data && data.accountNumber ? data : null);
+      } else {
+        console.log('Bank details API failed:', response.status);
+        setBankDetails(null);
+      }
+    } catch (error) {
+      console.error('Error loading bank details:', error);
+      setBankDetails(null);
+    }
+  };
   
   const loadProfile = async () => {
     try {
@@ -188,6 +225,48 @@ function PatientProfile({ user, onUpdate }) {
         </CardContent>
       </Card>
 
+      {/* Bank Account Setup */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AccountBalance color="primary" sx={{ mr: 1 }} />
+              <Typography variant="h6">🏦 Bank Account</Typography>
+            </Box>
+            <Button
+              variant={bankDetails ? "outlined" : "contained"}
+              startIcon={<Edit />}
+              onClick={() => setBankSetupOpen(true)}
+            >
+              {bankDetails ? 'Update Account' : 'Setup Account'}
+            </Button>
+          </Box>
+
+          {bankDetails ? (
+            <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>🏦 Bank:</strong> {bankDetails.bankName}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>👤 Account Holder:</strong> {bankDetails.accountHolderName}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>🔢 Account:</strong> ****{bankDetails.accountNumber?.slice(-4)}
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                <strong>🏛️ IFSC:</strong> {bankDetails.ifscCode}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
+              <Typography variant="body1" color="warning.contrastText">
+                ⚠️ No bank account setup. Add your account for refunds and withdrawals.
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Patient Review History */}
       <PatientReviewHistory patientId={user._id || user.id} />
 
@@ -296,6 +375,19 @@ function PatientProfile({ user, onUpdate }) {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Bank Setup Dialog */}
+      <PatientBankSetup
+        open={bankSetupOpen}
+        onClose={() => {
+          setBankSetupOpen(false);
+          // Add a small delay to ensure data is saved before refreshing
+          setTimeout(() => {
+            loadBankDetails();
+          }, 500);
+        }}
+        patient={user}
+      />
     </>
   );
 }
