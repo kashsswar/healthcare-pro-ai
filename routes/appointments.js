@@ -246,8 +246,33 @@ router.put('/:appointmentId/cancel', async (req, res) => {
       return res.status(404).json({ message: 'Appointment not found' });
     }
     
-    console.log('Appointment cancelled successfully:', appointment._id);
-    res.json({ message: 'Appointment cancelled successfully', appointment });
+    // Add refund to patient wallet
+    const mongoose = require('mongoose');
+    const Wallet = mongoose.model('PatientWallet');
+    const refundAmount = appointment.consultationFee || 500;
+    
+    let wallet = await Wallet.findOne({ userId: appointment.patientId || appointment.patient });
+    if (!wallet) {
+      wallet = new Wallet({ userId: appointment.patientId || appointment.patient, balance: 0 });
+    }
+    
+    wallet.balance += refundAmount;
+    wallet.transactions.push({
+      type: 'credit',
+      amount: refundAmount,
+      description: 'Appointment cancellation refund',
+      transactionId: `REF_${appointment._id}`,
+      timestamp: new Date()
+    });
+    
+    await wallet.save();
+    
+    console.log('Appointment cancelled and refund added:', appointment._id);
+    res.json({ 
+      message: 'Appointment cancelled successfully. Refund added to wallet.', 
+      appointment,
+      refundAmount 
+    });
   } catch (error) {
     console.error('Cancel appointment error:', error);
     res.status(500).json({ message: error.message });

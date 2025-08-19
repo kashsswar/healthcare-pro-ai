@@ -37,6 +37,7 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/doctor-profile', require('./routes/doctor-profile'));
 app.use('/api/patient-profile', require('./routes/patient-profile'));
 app.use('/api/bank-details', require('./routes/bank-details'));
+app.use('/api/patient-wallet', require('./routes/patient-wallet'));
 app.use('/api/stripe', require('./routes/stripe-payment'));
 
 // Test route
