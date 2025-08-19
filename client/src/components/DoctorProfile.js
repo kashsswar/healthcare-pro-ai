@@ -12,6 +12,7 @@ function DoctorProfile({ user, onUpdate }) {
   const [adminBoost, setAdminBoost] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [patientCount, setPatientCount] = useState(0);
+  const [bankDetails, setBankDetails] = useState(null);
   
   const getRating = () => rating;
   const getAdminBoost = () => adminBoost;
@@ -42,6 +43,7 @@ function DoctorProfile({ user, onUpdate }) {
     if (userId) {
       loadProfile();
       loadStats();
+      loadBankDetails();
     }
   }, [user._id, user.id]);
   
@@ -105,6 +107,24 @@ function DoctorProfile({ user, onUpdate }) {
       
     } catch (error) {
       console.error('Error loading stats:', error);
+    }
+  };
+  
+  const loadBankDetails = async () => {
+    try {
+      const userId = user._id || user.id;
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/bank-details/doctor/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.accountNumber) {
+          setBankDetails(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading bank details:', error);
     }
   };
   
@@ -211,6 +231,11 @@ function DoctorProfile({ user, onUpdate }) {
               {(profile.flatNo || profile.street || profile.city || profile.state) && (
                 <Typography variant="body1" color="success.contrastText">
                   <strong>🏠 Clinic Address:</strong> {[profile.flatNo, profile.street, profile.city, profile.state].filter(Boolean).join(', ')}
+                </Typography>
+              )}
+              {bankDetails && (
+                <Typography variant="body1" color="success.contrastText">
+                  <strong>🏦 Bank Details:</strong> {bankDetails.bankName} - ****{bankDetails.accountNumber.slice(-4)}
                 </Typography>
               )}
             </Box>
