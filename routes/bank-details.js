@@ -38,25 +38,10 @@ router.post('/', async (req, res) => {
 });
 
 // Get bank details
-router.get('/:userId/:userType', async (req, res) => {
-  try {
-    const bankDetails = await BankDetails.findOne({
-      userId: req.params.userId,
-      userType: req.params.userType
-    });
-    
-    res.json(bankDetails || {});
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get bank details by user type
 router.get('/:userType/:userId', async (req, res) => {
   try {
     const { userId, userType } = req.params;
     
-    // Convert userId to ObjectId if it's a valid format, otherwise use as string
     let searchUserId = userId;
     if (mongoose.Types.ObjectId.isValid(userId)) {
       searchUserId = new mongoose.Types.ObjectId(userId);
